@@ -10,6 +10,8 @@
 CONTRACT Contract : public eosio::contract {
 public:
 using contract::contract;
+    // in_max out (swap)
+    // min max min max (add_liq)
 
     // notifications
     [[eosio::on_notify("eosio.token::transfer")]]
