@@ -21,9 +21,13 @@ public:
     [[eosio::on_notify("*::transfer")]]
     void OnTokenDeposit(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
 
+    // actions
     [[eosio::action("init.token")]]
     void InitToken(eosio::name issuer, eosio::symbol new_symbol, eosio::extended_asset initial_pool1,
                    eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract);
+
+    [[eosio::action("addliquidity")]]
+    void AddLiquidity(eosio::name record, eosio::symbol token, eosio::asset max_asset1, eosio::asset max_asset2);
 
 private:
 

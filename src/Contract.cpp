@@ -38,4 +38,60 @@ void Contract::InitToken(const name issuer, const symbol new_symbol, const exten
     });
 
     AddBalance(issuer, new_token, issuer);
+
+    //TODO: sub ext balances
+}
+
+int64_t GetLiquidity(const int64_t in_amount, const int64_t supply, const int64_t pool) {
+    return static_cast<int64_t>((static_cast<uint128_t>(in_amount) * static_cast<uint128_t>(supply))
+        / static_cast<uint128_t>(pool));
+}
+
+int64_t CalculateToPayAmount(const int64_t liquidity, const int64_t pool, const int64_t supply) {
+    return static_cast<int64_t>((static_cast<uint128_t>(liquidity) * static_cast<uint128_t>(pool))
+        / static_cast<uint128_t>(supply));
+}
+
+void Contract::AddLiquidity(const name user, symbol token, const asset max_asset1, const asset max_asset2) {
+    require_auth(user);
+
+    check(max_asset1.symbol != max_asset2.symbol, "assets cannot be the same");
+    check(max_asset1.amount > 0 && max_asset2.amount > 0, "assets must be positive");
+
+    CurrencyStatsTable stats_table(get_self(), token.code().raw());
+    const auto token_it = stats_table.find(token.code().raw());
+    check (token_it != stats_table.end(), "pair token_it does not exist");
+
+    check(max_asset1.symbol == token_it->pool1.quantity.symbol && max_asset2.symbol == token_it->pool2.quantity.symbol,
+          "invalid assets");
+
+    const asset supply = token_it->supply;
+    const asset pool1 = token_it->pool1.quantity;
+    const asset pool2 = token_it->pool2.quantity;
+
+    const int64_t liquidity = min(
+            GetLiquidity(max_asset1.amount, supply.amount, pool1.amount),
+            GetLiquidity(max_asset2.amount, supply.amount, pool2.amount)
+    );
+
+    const asset to_pay1 = {
+            CalculateToPayAmount(liquidity, pool1.amount, supply.amount),
+            token
+    };
+
+    const asset to_pay2 = {
+            CalculateToPayAmount(liquidity, pool2.amount, supply.amount),
+            token
+    };
+
+    AddBalance(user, {liquidity, token}, user);
+
+    stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {
+        record.supply.amount += liquidity;
+        record.pool1.quantity += to_pay1;
+        record.pool2.quantity += to_pay2;
+    });
+
+
+    //TODO: sub ext balances
 }
