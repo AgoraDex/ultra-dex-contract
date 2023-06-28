@@ -4,6 +4,8 @@
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
 
+constexpr int128_t INT128_MAX = std::numeric_limits<__int128>::max();
+
 #include "DefinitionsRaw.hpp"
 
 #undef CONTRACT
@@ -12,6 +14,7 @@ typedef unsigned __int128 uint128_t;
 #undef TABLE
 #define TABLE struct [[eosio::table, eosio::contract(CONTRACT_NAME)]]
 
-constexpr uint32_t FOREIGN_ACCOUNT_SIZE = 20;
-
-constexpr int128_t INT128_MAX = std::numeric_limits<__int128>::max();
+const int64_t MAX_SUPPLY = eosio::asset::max_amount;
+const int64_t INIT_MAX = 1000000000000000;  // 10^15
+const int ADD_LIQUIDITY_FEE = 1;
+const int DEFAULT_FEE = 10;

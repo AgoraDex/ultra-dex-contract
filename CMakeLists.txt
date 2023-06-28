@@ -15,6 +15,8 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     add_executable(
             dex
             src/Contract.cpp
+            src/Balances.cpp
+            src/ExtBalances.cpp
     )
     target_include_directories(dex PUBLIC ${EOSIO_H} ${EOSIO})
 
@@ -25,5 +27,7 @@ else ()
     add_contract(
             dex dex
             src/Contract.cpp
+            src/Balances.cpp
+            src/ExtBalances.cpp
     )
 endif ()

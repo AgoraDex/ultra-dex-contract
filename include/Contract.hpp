@@ -9,7 +9,8 @@
 
 CONTRACT Contract : public eosio::contract {
 public:
-using contract::contract;
+    using contract::contract;
+
     // in_max out (swap)
     // min max min max (add_liq)
 
@@ -20,11 +21,14 @@ using contract::contract;
     [[eosio::on_notify("*::transfer")]]
     void OnTokenDeposit(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
 
-    [[eosio::action]] void inittoken(eosio::name user, eosio::symbol new_symbol,
-                                     eosio::extended_asset initial_pool1, extended_asset initial_pool2,
-                                     int initial_fee, name fee_contract);
+    [[eosio::action("init.token")]]
+    void InitToken(eosio::name issuer, eosio::symbol new_symbol, eosio::extended_asset initial_pool1,
+                   eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract);
 
 private:
+
+    void SubBalance(eosio::name user, eosio::asset value);
+    void AddBalance(eosio::name user, eosio::asset value, eosio::name ram_payer);
 
     // global scope
     TABLE CurrencyStatRecord {

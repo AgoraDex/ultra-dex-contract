@@ -1,42 +1,41 @@
 #include <Contract.hpp>
+#include <cmath>
 
 using namespace std;
 using namespace eosio;
 
-void Contract::OnTokenDeposit(name from, name to, asset quantity, const string& memo) {
-    if (to != get_self()) {
-        return;
-    }
-    if (from == get_self()) {
-        return;
-    }
-    check(quantity.amount > 0, "Token amount must be positive");
+void Contract::InitToken(const name issuer, const symbol new_symbol, const extended_asset initial_pool1,
+                         const extended_asset initial_pool2, const int initial_fee, const name fee_contract) {
+    require_auth(get_self());
+    require_auth(issuer);
 
-    const extended_asset ext_asset { quantity, get_first_receiver() };
-    check(ext_asset.quantity.is_valid(), "invalid asset");
+    check(initial_pool1.get_extended_symbol() != initial_pool2.get_extended_symbol(),
+          "extended symbols must be different");
+    check(initial_pool1.quantity.amount > 0 && initial_pool2.quantity.amount > 0, "Both assets must be positive");
+    check(initial_pool1.quantity.amount < INIT_MAX && initial_pool2.quantity.amount < INIT_MAX,
+          "Initial amounts must be less than 10^15");
 
-    ExtendedBalancesTable balances_table { get_self(), to.value };
-    auto index = balances_table.get_index<"extended"_n>();
+    const uint8_t precision = (initial_pool1.quantity.symbol.precision()
+            + initial_pool2.quantity.symbol.precision()) / 2;
 
-    const auto balance_it = index.find(GetIndexFromToken(ext_asset.get_extended_symbol()));
+    check( new_symbol.precision() == precision, "new_symbol precision must be (precision1 + precision2) / 2" );
 
-    if (balance_it == index.end()) {
-        balances_table.emplace(get_self(), [&](ExtendedBalanceRecord& record) {
-            record.id = balances_table.available_primary_key();
-            record.balance = ext_asset;
-        });
-    } else {
-        index.modify(balance_it, get_self(), [&](ExtendedBalanceRecord& record) {
-            record.balance += ext_asset;
-        });
-    }
-}
+    const int128_t amount = sqrt(int128_t(initial_pool1.quantity.amount) * int128_t(initial_pool2.quantity.amount));
+    const asset new_token { int64_t(amount), new_symbol };
 
-void Contract::OnEosTokenDeposit(name from, name to, asset quantity, const string& memo) {
-    OnTokenDeposit(from, to, quantity, memo);
-}
+    CurrencyStatsTable stats_table {get_self(), new_symbol.code().raw()};
+    const auto& token_it = stats_table.find(new_symbol.code().raw());
+    check (token_it == stats_table.end(), "token already exists");
 
-uint128_t Contract::GetIndexFromToken(eosio::extended_symbol token) {
-    return (static_cast<uint128_t>(token.get_contract().value) << 64) ||
-           static_cast<uint128_t>(token.get_symbol().raw());
+    stats_table.emplace(issuer, [&](CurrencyStatRecord& record) {
+        record.supply = new_token;
+        record.max_supply = asset {MAX_SUPPLY, new_symbol};
+        record.issuer = issuer;
+        record.pool1 = initial_pool1;
+        record.pool2 = initial_pool2;
+        record.fee = initial_fee;
+        record.fee_contract = fee_contract;
+    });
+
+    AddBalance(issuer, new_token, issuer);
 }
