@@ -91,3 +91,11 @@ void Contract::AddLiquidity(const name user, symbol token, const asset max_asset
     SubExtBalance(user, to_pay1);
     SubExtBalance(user, to_pay2);
 }
+
+void Contract::Swap(const name user, const symbol pair_token, const asset max_in, const asset expected_out) {
+    require_auth(user);
+
+
+
+
+}

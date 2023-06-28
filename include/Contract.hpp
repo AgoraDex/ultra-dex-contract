@@ -11,9 +11,6 @@ CONTRACT Contract : public eosio::contract {
 public:
     using contract::contract;
 
-    // in_max out (swap)
-    // min max min max (add_liq)
-
     // notifications
     [[eosio::on_notify("eosio.token::transfer")]]
     void OnEosTokenDeposit(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
@@ -28,6 +25,9 @@ public:
 
     [[eosio::action("addliquidity")]]
     void AddLiquidity(eosio::name record, eosio::symbol token, eosio::asset max_asset1, eosio::asset max_asset2);
+
+    [[eosio::action("swap")]]
+    void Swap(eosio::name user, eosio::symbol pair_token, eosio::asset max_in, eosio::asset expected_out);
 
 private:
 
@@ -53,7 +53,7 @@ private:
     };
     typedef eosio::multi_index< "stat"_n, CurrencyStatRecord > CurrencyStatsTable;
 
-    // tokens-pairs balances
+    // token-pairs balances
     // user scope
     TABLE BalanceRecord {
         eosio::asset    balance;
