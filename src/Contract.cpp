@@ -38,8 +38,8 @@ void Contract::InitToken(const name issuer, const symbol new_symbol, const exten
     });
 
     AddBalance(issuer, new_token, issuer);
-
-    //TODO: sub ext balances
+    SubExtBalance(issuer, initial_pool1);
+    SubExtBalance(issuer, initial_pool2);
 }
 
 int64_t GetLiquidity(const int64_t in_amount, const int64_t supply, const int64_t pool) {
@@ -66,32 +66,28 @@ void Contract::AddLiquidity(const name user, symbol token, const asset max_asset
           "invalid assets");
 
     const asset supply = token_it->supply;
-    const asset pool1 = token_it->pool1.quantity;
-    const asset pool2 = token_it->pool2.quantity;
+    const extended_asset pool1 = token_it->pool1;
+    const extended_asset pool2 = token_it->pool2;
 
     const int64_t liquidity = min(
-            GetLiquidity(max_asset1.amount, supply.amount, pool1.amount),
-            GetLiquidity(max_asset2.amount, supply.amount, pool2.amount)
+            GetLiquidity(max_asset1.amount, supply.amount, pool1.quantity.amount),
+            GetLiquidity(max_asset2.amount, supply.amount, pool2.quantity.amount)
     );
 
-    const asset to_pay1 = {
-            CalculateToPayAmount(liquidity, pool1.amount, supply.amount),
-            token
-    };
+    extended_asset to_pay1 = pool1;
+    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
 
-    const asset to_pay2 = {
-            CalculateToPayAmount(liquidity, pool2.amount, supply.amount),
-            token
-    };
+    extended_asset to_pay2 = pool2;
+    to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
     AddBalance(user, {liquidity, token}, user);
 
     stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {
         record.supply.amount += liquidity;
-        record.pool1.quantity += to_pay1;
-        record.pool2.quantity += to_pay2;
+        record.pool1.quantity += to_pay1.quantity;
+        record.pool2.quantity += to_pay2.quantity;
     });
 
-
-    //TODO: sub ext balances
+    SubExtBalance(user, to_pay1);
+    SubExtBalance(user, to_pay2);
 }

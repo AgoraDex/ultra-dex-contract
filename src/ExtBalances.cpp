@@ -40,3 +40,33 @@ uint128_t Contract::GetIndexFromToken(eosio::extended_symbol token) {
     return (static_cast<uint128_t>(token.get_contract().value) << 64) ||
            static_cast<uint128_t>(token.get_symbol().raw());
 }
+
+void Contract::AddExtBalance(const name user, const extended_asset to_add) {
+    check(to_add.quantity.is_valid(), "invalid asset");
+
+    ExtendedBalancesTable balances {get_self(), user.value};
+    auto index = balances.get_index<"extended"_n>();
+
+    const auto balance_it = index.find(GetIndexFromToken(to_add.get_extended_symbol()));
+
+    if (balance_it == index.end()) {
+        check(to_add.quantity.amount > 0, "Insufficient funds");
+
+        balances.emplace(get_self(), [&](ExtendedBalanceRecord& record) {
+            record.id = balances.available_primary_key();
+            record.balance = to_add;
+        });
+    } else {
+        index.modify(balance_it, get_self(), [&](ExtendedBalanceRecord& record) {
+            check(to_add.quantity.amount + record.balance.quantity.amount >= 0,
+                  "Insufficient funds, you have " + record.balance.quantity.to_string()
+                  + ", but need " + (to_add.quantity * -1).to_string());
+
+            record.balance += to_add;
+        });
+    }
+}
+
+void Contract::SubExtBalance(const name user, const extended_asset value) {
+    AddExtBalance(user, -value);
+}
