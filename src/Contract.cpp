@@ -95,6 +95,35 @@ void Contract::AddLiquidity(const name user, symbol token, const asset max_asset
 void Contract::Swap(const name user, const symbol pair_token, const asset max_in, const asset expected_out) {
     require_auth(user);
 
+    CurrencyStatsTable stats_table(get_self(), pair_token.code().raw());
+    const auto token_it = stats_table.find(pair_token.code().raw());
+    check (token_it != stats_table.end(), "pair token does not exist");
+
+    bool in_first = false;
+    if ((token_it->pool1.quantity.symbol == max_in.symbol) &&
+        (token_it->pool2.quantity.symbol == expected_out.symbol)) {
+        in_first = true;
+    } else {
+        check(
+                token_it->pool1.quantity.symbol == expected_out.symbol &&
+                token_it->pool2.quantity.symbol == max_in.symbol,
+                "extended_symbol mismatch"
+        );
+    }
+
+    extended_asset pool_in, pool_out;
+    if (in_first) {
+        pool_in = token_it->pool1;
+        pool_out = token_it->pool2;
+    } else {
+        pool_in = token_it->pool2;
+        pool_out = token_it->pool1;
+    }
+
+    const int64_t in = (pool_in.quantity.amount * expected_out.amount) / pool_out.quantity.amount;
+    check(in <= max_in.amount, "available is less than expected");
+
+    extended_asset asset_in {in, pool_in.get_extended_symbol()};
 
 
 
