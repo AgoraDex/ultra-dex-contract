@@ -1,4 +1,5 @@
 #include <Contract.hpp>
+#include <eosio.token.hpp>
 #include <cmath>
 
 using namespace std;
@@ -123,8 +124,29 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     const int64_t in = (pool_in.quantity.amount * expected_out.amount) / pool_out.quantity.amount;
     check(in <= max_in.amount, "available is less than expected");
 
-    extended_asset asset_in {in, pool_in.get_extended_symbol()};
+    const extended_asset asset_in {in, pool_in.get_extended_symbol()};
+    const extended_asset asset_out {expected_out.amount, pool_out.get_extended_symbol()};
 
+    // change pair token params
+    stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {
 
+        if (in_first) {
+            record.pool1.quantity += asset_in.quantity;
+            record.pool2.quantity -= asset_out.quantity;
+        } else {
+            record.pool2.quantity += asset_in.quantity;
+            record.pool1.quantity -= asset_out.quantity;
+        }
 
+        check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
+              "Insufficient funds in the pool");
+
+    });
+
+    // sub balance in
+    SubExtBalance(user, asset_in);
+
+    // transfer balance out
+    token::transfer_action action(asset_out.contract, {get_self(), "active"_n});
+    action.send(get_self(), user, asset_out.quantity, "swap");
 }
