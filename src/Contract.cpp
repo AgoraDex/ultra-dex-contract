@@ -143,10 +143,19 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
 
     });
 
-    // sub balance in
+    // sub balance "in"
     SubExtBalance(user, asset_in);
 
-    // transfer balance out
+    // transfer balance "out"
     token::transfer_action action(asset_out.contract, {get_self(), "active"_n});
     action.send(get_self(), user, asset_out.quantity, "swap");
+
+    // transfer "in" exchange
+    if (max_in.amount > asset_in.quantity.amount) {
+        const extended_asset exchange = {max_in.amount - asset_in.quantity.amount, asset_in.get_extended_symbol()};
+        SubExtBalance(user, exchange);
+
+        token::transfer_action exchange_action(exchange.contract, {get_self(), "active"_n});
+        exchange_action.send(get_self(), user, exchange.quantity, "swap exchange");
+    }
 }
