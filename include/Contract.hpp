@@ -29,6 +29,9 @@ public:
     [[eosio::action("swap")]]
     void Swap(eosio::name user, eosio::symbol pair_token, eosio::asset max_in, eosio::asset expected_out);
 
+    [[eosio::action("withdraw")]]
+    void Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extended_symbol token);
+
 private:
 
     void SubBalance(eosio::name user, eosio::asset value);

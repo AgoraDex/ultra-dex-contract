@@ -1,4 +1,5 @@
 #include <Contract.hpp>
+#include <eosio.token.hpp>
 
 using namespace std;
 using namespace eosio;
@@ -15,7 +16,7 @@ void Contract::OnTokenDeposit(name from, name to, asset quantity, const string& 
     const extended_asset ext_asset { quantity, get_first_receiver() };
     check(ext_asset.quantity.is_valid(), "invalid asset");
 
-    ExtendedBalancesTable balances_table { get_self(), to.value };
+    ExtendedBalancesTable balances_table { get_self(), from.value };
     auto index = balances_table.get_index<"extended"_n>();
 
     const auto balance_it = index.find(GetIndexFromToken(ext_asset.get_extended_symbol()));
@@ -69,4 +70,25 @@ void Contract::AddExtBalance(const name user, const extended_asset to_add) {
 
 void Contract::SubExtBalance(const name user, const extended_asset value) {
     AddExtBalance(user, -value);
+}
+
+void Contract::Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extended_symbol token) {
+    require_auth(user);
+
+    ExtendedBalancesTable balances_table { get_self(), user.value };
+    auto index = balances_table.get_index<"extended"_n>();
+
+    const auto balance_it = index.find(GetIndexFromToken(token));
+
+    check(balance_it != index.end(), "Token not found");
+
+    const extended_asset to_transfer = balance_it->balance;
+    index.erase(balance_it);
+
+    if (to_transfer.quantity.amount < 1) {
+        return;
+    }
+
+    token::transfer_action transfer_action(to_transfer.contract, {get_self(), "active"_n});
+    transfer_action.send(get_self(), withdraw_to, to_transfer.quantity, "withdraw");
 }
