@@ -37,9 +37,8 @@ void Contract::OnEosTokenDeposit(name from, name to, asset quantity, const strin
     OnTokenDeposit(from, to, quantity, memo);
 }
 
-uint128_t Contract::GetIndexFromToken(eosio::extended_symbol token) {
-    return (static_cast<uint128_t>(token.get_contract().value) << 64) ||
-           static_cast<uint128_t>(token.get_symbol().raw());
+uint128_t Contract::GetIndexFromToken(const eosio::extended_symbol token) {
+    return (static_cast<uint128_t>(token.get_contract().value) << 64) + token.get_symbol().raw();
 }
 
 void Contract::AddExtBalance(const name user, const extended_asset to_add) {
@@ -89,6 +88,6 @@ void Contract::Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extend
         return;
     }
 
-    token::transfer_action transfer_action(to_transfer.contract, {get_self(), "active"_n});
+    token::transfer_action transfer_action(to_transfer.contract, { get_self(), "active"_n });
     transfer_action.send(get_self(), withdraw_to, to_transfer.quantity, "withdraw");
 }
