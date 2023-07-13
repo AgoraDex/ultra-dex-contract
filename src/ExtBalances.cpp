@@ -57,6 +57,11 @@ void Contract::AddExtBalance(const name user, const extended_asset to_add) {
             record.balance = to_add;
         });
     } else {
+        if (balance_it->balance.quantity.amount + to_add.quantity.amount == 0) {
+            index.erase(balance_it);
+            return;
+        }
+
         index.modify(balance_it, get_self(), [&](ExtendedBalanceRecord& record) {
             check(to_add.quantity.amount + record.balance.quantity.amount >= 0,
                   "Insufficient funds, you have " + record.balance.quantity.to_string()
