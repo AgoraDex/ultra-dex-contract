@@ -24,7 +24,7 @@ public:
                    eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract);
 
     [[eosio::action("addliquidity")]]
-    void AddLiquidity(eosio::name record, eosio::symbol token, eosio::asset max_asset1, eosio::asset max_asset2);
+    void AddLiquidity(eosio::name user, eosio::symbol token, eosio::asset max_asset1, eosio::asset max_asset2);
 
     [[eosio::action("swap")]]
     void Swap(eosio::name user, eosio::symbol pair_token, eosio::asset max_in, eosio::asset expected_out);

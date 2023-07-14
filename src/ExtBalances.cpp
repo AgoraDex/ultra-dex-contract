@@ -44,7 +44,7 @@ uint128_t Contract::GetIndexFromToken(const eosio::extended_symbol token) {
 void Contract::AddExtBalance(const name user, const extended_asset to_add) {
     check(to_add.quantity.is_valid(), "invalid asset");
 
-    ExtendedBalancesTable balances {get_self(), user.value};
+    ExtendedBalancesTable balances { get_self(), user.value };
     auto index = balances.get_index<"extended"_n>();
 
     const auto balance_it = index.find(GetIndexFromToken(to_add.get_extended_symbol()));
