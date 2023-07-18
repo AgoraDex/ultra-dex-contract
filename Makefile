@@ -3,7 +3,7 @@ SHELL=/bin/bash
 # mainnet is https://wax.greymass.com
 endpoint ?= "https://api.testnet.ultra.eossweden.org/"
 project = dex
-account ?= 1aa2aa3aa4fh
+account ?= agora.dex
 
 CMAKE_VARS = -DCONTRACT_NAME=${project}\
 
