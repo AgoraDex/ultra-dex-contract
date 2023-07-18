@@ -15,6 +15,7 @@ void Contract::InitToken(const name issuer, const symbol new_symbol, const exten
     check(initial_pool1.quantity.amount > 0 && initial_pool2.quantity.amount > 0, "Both assets must be positive");
     check(initial_pool1.quantity.amount < INIT_MAX && initial_pool2.quantity.amount < INIT_MAX,
           "Initial amounts must be less than 10^15");
+    check(initial_fee < MAX_FEE, "the fee is too big");
 
     const uint8_t precision = (initial_pool1.quantity.symbol.precision()
             + initial_pool2.quantity.symbol.precision()) / 2;
@@ -41,6 +42,23 @@ void Contract::InitToken(const name issuer, const symbol new_symbol, const exten
     AddBalance(issuer, new_token, issuer);
     SubExtBalance(issuer, initial_pool1);
     SubExtBalance(issuer, initial_pool2);
+}
+
+void Contract::SetFee(eosio::symbol token, int new_fee, eosio::name fee_account) {
+    check(new_fee < MAX_FEE, "the fee is too big");
+
+    CurrencyStatsTable stats_table(get_self(), token.code().raw());
+    const auto token_it = stats_table.find(token.code().raw());
+    check (token_it != stats_table.end(), "pair token_it does not exist");
+
+    // auth
+    require_auth(get_self());
+    require_auth(token_it->issuer);
+
+    stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {
+        record.fee = new_fee;
+        record.fee_contract = fee_account;
+    });
 }
 
 int64_t GetLiquidity(const int64_t in_amount, const int64_t supply, const int64_t pool) {
@@ -143,19 +161,21 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
 
     });
 
+    // fee calculation
+    const int64_t token_fee = token_it->fee;
+    const name fee_collector = token_it->fee_contract;
+
+    const int64_t fee_amount = static_cast<int64_t>((static_cast<int128_t>(out) * static_cast<int128_t>(token_fee))
+            / DEFAULT_FEE_PRECISION) / 100;
+    const asset fee {fee_amount, asset_out.quantity.symbol};
+
     // sub balance "in"
     SubExtBalance(user, asset_in);
 
     // transfer balance "out"
     token::transfer_action action(asset_out.contract, {get_self(), "active"_n});
-    action.send(get_self(), user, asset_out.quantity, "swap");
+    action.send(get_self(), user, asset_out.quantity - fee, "swap");
 
-    // transfer "in" exchange
-    if (max_in.amount > asset_in.quantity.amount) {
-        const extended_asset exchange = {max_in.amount - asset_in.quantity.amount, asset_in.get_extended_symbol()};
-        SubExtBalance(user, exchange);
-
-        token::transfer_action exchange_action(exchange.contract, {get_self(), "active"_n});
-        exchange_action.send(get_self(), user, exchange.quantity, "swap exchange");
-    }
+    // transfer fee to collector
+    action.send(get_self(), fee_collector, fee, "swap fee");
 }
