@@ -99,7 +99,15 @@ void Contract::AddLiquidity(const name user, symbol token, const asset max_asset
     extended_asset to_pay2 = pool2;
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
-    AddBalance(user, {liquidity, token}, user);
+    // fee calculation
+    const int64_t fee_amount = static_cast<int64_t>(static_cast<int128_t>(liquidity) * ADD_LIQUIDITY_FEE
+            / DEFAULT_FEE_PRECISION) / 100;
+
+    // add balance to user
+    AddBalance(user, {liquidity - fee_amount, token}, user);
+
+    // add fee to fee collector
+    AddBalance(token_it->fee_contract, {fee_amount, token}, user);
 
     stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {
         record.supply.amount += liquidity;
