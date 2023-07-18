@@ -39,7 +39,7 @@ void Contract::InitToken(const name issuer, const symbol new_symbol, const exten
         record.fee_contract = fee_contract;
     });
 
-    AddBalance(issuer, new_token, issuer);
+    AddBalance(issuer, new_token);
     SubExtBalance(issuer, initial_pool1);
     SubExtBalance(issuer, initial_pool2);
 }
