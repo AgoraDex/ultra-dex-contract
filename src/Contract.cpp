@@ -29,7 +29,7 @@ void Contract::InitToken(const name issuer, const symbol new_symbol, const exten
     const auto& token_it = stats_table.find(new_symbol.code().raw());
     check (token_it == stats_table.end(), "token already exists");
 
-    stats_table.emplace(issuer, [&](CurrencyStatRecord& record) {
+    stats_table.emplace(get_self(), [&](CurrencyStatRecord& record) {
         record.supply = new_token;
         record.max_supply = asset {MAX_SUPPLY, new_symbol};
         record.issuer = issuer;
@@ -55,7 +55,7 @@ void Contract::SetFee(eosio::symbol token, int new_fee, eosio::name fee_account)
     require_auth(get_self());
     require_auth(token_it->issuer);
 
-    stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {
+    stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         record.fee = new_fee;
         record.fee_contract = fee_account;
     });
@@ -109,7 +109,7 @@ void Contract::AddLiquidity(const name user, symbol token, const asset max_asset
     // add fee to fee collector
     AddBalance(token_it->fee_contract, {fee_amount, token});
 
-    stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {
+    stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         record.supply.amount += liquidity;
         record.pool1.quantity += to_pay1.quantity;
         record.pool2.quantity += to_pay2.quantity;
@@ -154,7 +154,7 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     const extended_asset asset_out {out, pool_out.get_extended_symbol()};
 
     // change pair token params
-    stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {
+    stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
 
         if (in_first) {
             record.pool1.quantity += asset_in.quantity;
