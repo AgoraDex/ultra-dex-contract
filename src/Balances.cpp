@@ -14,13 +14,13 @@ void Contract::SubBalance(const name user, const asset value) {
     });
 }
 
-void Contract::AddBalance(const name user, const asset value, const name ram_payer) {
+void Contract::AddBalance(const name user, const asset value) {
     BalancesTable balances {get_self(), user.value};
 
     const auto balance_it = balances.find(value.symbol.code().raw());
 
     if (balance_it == balances.end()) {
-        balances.emplace(ram_payer, [&](BalanceRecord& record){
+        balances.emplace(get_self(), [&](BalanceRecord& record){
             record.balance = value;
         });
     } else {

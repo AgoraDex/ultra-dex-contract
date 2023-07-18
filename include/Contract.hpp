@@ -38,7 +38,7 @@ public:
 private:
 
     void SubBalance(eosio::name user, eosio::asset value);
-    void AddBalance(eosio::name user, eosio::asset value, eosio::name ram_payer);
+    void AddBalance(eosio::name user, eosio::asset value);
 
     void AddExtBalance(eosio::name user, eosio::extended_asset value);
     void SubExtBalance(eosio::name user, eosio::extended_asset value);
