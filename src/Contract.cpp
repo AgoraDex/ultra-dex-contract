@@ -121,11 +121,11 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
         pool_out = token_it->pool1;
     }
 
-    const int64_t in = (pool_in.quantity.amount * expected_out.amount) / pool_out.quantity.amount;
-    check(in <= max_in.amount, "available is less than expected");
+    const int64_t out = (max_in.amount * pool_out.quantity.amount) / pool_in.quantity.amount;
+    check(out >= expected_out.amount, "available is less than expected");
 
-    const extended_asset asset_in {in, pool_in.get_extended_symbol()};
-    const extended_asset asset_out {expected_out.amount, pool_out.get_extended_symbol()};
+    const extended_asset asset_in {max_in.amount, pool_in.get_extended_symbol()};
+    const extended_asset asset_out {out, pool_out.get_extended_symbol()};
 
     // change pair token params
     stats_table.modify(token_it, same_payer, [&](CurrencyStatRecord& record) {

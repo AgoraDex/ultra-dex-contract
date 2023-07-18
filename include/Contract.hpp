@@ -65,7 +65,7 @@ private:
             return balance.symbol.code().raw();
         }
     };
-    typedef eosio::multi_index< "balances"_n, BalanceRecord > BalancesTable;
+    typedef eosio::multi_index< "accounts"_n, BalanceRecord > BalancesTable;
 
     // user scope
     TABLE ExtendedBalanceRecord {
