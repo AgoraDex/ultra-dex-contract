@@ -222,7 +222,7 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset
         record.pool1.quantity -= to_pay1.quantity;
         record.pool2.quantity -= to_pay2.quantity;
 
-        check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
+        check(record.supply.amount > 0 && record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
               "Insufficient funds in the pool");
     });
 
