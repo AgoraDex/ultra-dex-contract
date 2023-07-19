@@ -110,6 +110,8 @@ void Contract::AddLiquidity(const name user, symbol token, const asset max_asset
     AddBalance(token_it->fee_contract, {fee_amount, token});
 
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
+        check(record.max_supply.amount - record.supply.amount >= liquidity, "supply overflow");
+
         record.supply.amount += liquidity;
         record.pool1.quantity += to_pay1.quantity;
         record.pool2.quantity += to_pay2.quantity;
