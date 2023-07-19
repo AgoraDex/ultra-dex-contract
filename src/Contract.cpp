@@ -187,3 +187,47 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     // transfer fee to collector
     action.send(get_self(), fee_collector, fee, "swap fee");
 }
+
+void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset min_asset1, const asset min_asset2) {
+    require_auth(user);
+
+    check(to_sell.amount > 0, "to_sell amount must be positive");
+
+    CurrencyStatsTable stats_table(get_self(), to_sell.symbol.code().raw());
+    const auto token_it = stats_table.find(to_sell.symbol.code().raw());
+    check (token_it != stats_table.end(), "pair token_it does not exist");
+
+    const asset supply = token_it->supply;
+    const extended_asset pool1 = token_it->pool1;
+    const extended_asset pool2 = token_it->pool2;
+
+    const int64_t liquidity = to_sell.amount;
+
+    extended_asset to_pay1 = pool1;
+    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
+
+    extended_asset to_pay2 = pool2;
+    to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
+
+    check(to_pay1.quantity >= min_asset1 && to_pay2.quantity >= min_asset2, "available is less than expected");
+
+    // remove balance from user
+    SubBalance(user, to_sell);
+
+    // remove supply
+    stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
+        record.supply.amount -= liquidity;
+        record.pool1.quantity -= to_pay1.quantity;
+        record.pool2.quantity -= to_pay2.quantity;
+
+        check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
+              "Insufficient funds in the pool");
+    });
+
+    // send funds to user
+    token::transfer_action action1(to_pay1.contract, {get_self(), "active"_n});
+    action1.send(get_self(), user, to_pay1.quantity, "removed liquidity");
+
+    token::transfer_action action2(to_pay2.contract, {get_self(), "active"_n});
+    action2.send(get_self(), user, to_pay2.quantity, "removed liquidity");
+}

@@ -29,6 +29,9 @@ public:
     [[eosio::action("addliquidity")]]
     void AddLiquidity(eosio::name user, eosio::symbol token, eosio::asset max_asset1, eosio::asset max_asset2);
 
+    [[eosio::action("remliquidity")]]
+    void RemoveLiquidity(eosio::name user, eosio::asset to_sell, eosio::asset min_asset1, eosio::asset min_asset2);
+
     [[eosio::action("swap")]]
     void Swap(eosio::name user, eosio::symbol pair_token, eosio::asset max_in, eosio::asset expected_out);
 
