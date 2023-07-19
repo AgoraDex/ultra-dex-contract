@@ -38,6 +38,9 @@ public:
     [[eosio::action("withdraw")]]
     void Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extended_symbol token);
 
+    [[eosio::action("transfer")]]
+    void Transfer(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
+
 private:
 
     void SubBalance(eosio::name user, eosio::asset value);
