@@ -49,7 +49,7 @@ private:
     void AddExtBalance(eosio::name user, eosio::extended_asset value);
     void SubExtBalance(eosio::name user, eosio::extended_asset value);
 
-    // global scope
+    // token scope
     TABLE CurrencyStatRecord {
         eosio::asset    supply;
         eosio::asset    max_supply;
@@ -77,7 +77,7 @@ private:
     typedef eosio::multi_index< "accounts"_n, BalanceRecord > BalancesTable;
 
     // user scope
-    TABLE ExtendedBalanceRecord {
+    TABLE DepositRecord {
         uint64_t id = 0;
         eosio::extended_asset   balance;
 
@@ -86,10 +86,10 @@ private:
             return GetIndexFromToken(balance.get_extended_symbol());
         }
     };
-    typedef eosio::multi_index< "ext.balances"_n, ExtendedBalanceRecord,
-            eosio::indexed_by<"extended"_n, eosio::const_mem_fun<ExtendedBalanceRecord, uint128_t,
-            &ExtendedBalanceRecord::secondary_key>>
-            > ExtendedBalancesTable;
+    typedef eosio::multi_index< "deposits"_n, DepositRecord,
+            eosio::indexed_by<"extended"_n, eosio::const_mem_fun<DepositRecord, uint128_t,
+            &DepositRecord::secondary_key>>
+            > DepositsTable;
 
     [[nodiscard]] static uint128_t GetIndexFromToken(eosio::extended_symbol token);
 };

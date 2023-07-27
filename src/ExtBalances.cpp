@@ -16,18 +16,18 @@ void Contract::OnTokenDeposit(name from, name to, asset quantity, const string& 
     const extended_asset ext_asset { quantity, get_first_receiver() };
     check(ext_asset.quantity.is_valid(), "invalid asset");
 
-    ExtendedBalancesTable balances_table { get_self(), from.value };
+    DepositsTable balances_table {get_self(), from.value };
     auto index = balances_table.get_index<"extended"_n>();
 
     const auto balance_it = index.find(GetIndexFromToken(ext_asset.get_extended_symbol()));
 
     if (balance_it == index.end()) {
-        balances_table.emplace(get_self(), [&](ExtendedBalanceRecord& record) {
+        balances_table.emplace(get_self(), [&](DepositRecord& record) {
             record.id = balances_table.available_primary_key();
             record.balance = ext_asset;
         });
     } else {
-        index.modify(balance_it, get_self(), [&](ExtendedBalanceRecord& record) {
+        index.modify(balance_it, get_self(), [&](DepositRecord& record) {
             record.balance += ext_asset;
         });
     }
@@ -44,7 +44,7 @@ uint128_t Contract::GetIndexFromToken(const eosio::extended_symbol token) {
 void Contract::AddExtBalance(const name user, const extended_asset to_add) {
     check(to_add.quantity.is_valid(), "invalid asset");
 
-    ExtendedBalancesTable balances { get_self(), user.value };
+    DepositsTable balances {get_self(), user.value };
     auto index = balances.get_index<"extended"_n>();
 
     const auto balance_it = index.find(GetIndexFromToken(to_add.get_extended_symbol()));
@@ -52,7 +52,7 @@ void Contract::AddExtBalance(const name user, const extended_asset to_add) {
     if (balance_it == index.end()) {
         check(to_add.quantity.amount > 0, "Insufficient funds");
 
-        balances.emplace(get_self(), [&](ExtendedBalanceRecord& record) {
+        balances.emplace(get_self(), [&](DepositRecord& record) {
             record.id = balances.available_primary_key();
             record.balance = to_add;
         });
@@ -62,7 +62,7 @@ void Contract::AddExtBalance(const name user, const extended_asset to_add) {
             return;
         }
 
-        index.modify(balance_it, get_self(), [&](ExtendedBalanceRecord& record) {
+        index.modify(balance_it, get_self(), [&](DepositRecord& record) {
             check(to_add.quantity.amount + record.balance.quantity.amount >= 0,
                   "Insufficient funds, you have " + record.balance.quantity.to_string()
                   + ", but need " + (to_add.quantity * -1).to_string());
@@ -79,7 +79,7 @@ void Contract::SubExtBalance(const name user, const extended_asset value) {
 void Contract::Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extended_symbol token) {
     require_auth(user);
 
-    ExtendedBalancesTable balances_table { get_self(), user.value };
+    DepositsTable balances_table {get_self(), user.value };
     auto index = balances_table.get_index<"extended"_n>();
 
     const auto balance_it = index.find(GetIndexFromToken(token));
