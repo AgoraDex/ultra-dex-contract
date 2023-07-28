@@ -52,13 +52,18 @@ private:
 
     // token scope
     TABLE CurrencyStatRecord {
-        eosio::asset    supply;
-        eosio::asset    max_supply;
-        eosio::name     issuer;
-        eosio::extended_asset    pool1;
-        eosio::extended_asset    pool2;
+        eosio::asset supply;
+        eosio::asset max_supply;
+        eosio::name issuer;
+
+        eosio::extended_asset pool1;
+        eosio::extended_asset pool2;
+        int64_t raw_pool1_amount = 0;
+        int64_t raw_pool2_amount = 0;
+
         int fee = 0;
         eosio::name fee_contract;
+        int fee_contract_rate = 0;
 
         [[nodiscard]] uint64_t primary_key() const {
             return supply.symbol.code().raw();
@@ -69,7 +74,7 @@ private:
     // token-pairs balances
     // user scope
     TABLE BalanceRecord {
-        eosio::asset    balance;
+        eosio::asset balance;
 
         [[nodiscard]] uint64_t primary_key() const {
             return balance.symbol.code().raw();
@@ -80,7 +85,7 @@ private:
     // user scope
     TABLE DepositRecord {
         uint64_t id = 0;
-        eosio::extended_asset   balance;
+        eosio::extended_asset balance;
 
         [[nodiscard]] uint64_t primary_key() const { return id; }
         [[nodiscard]] uint128_t secondary_key() const {
