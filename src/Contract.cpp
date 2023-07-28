@@ -11,10 +11,10 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
     require_auth(issuer);
 
     check(initial_pool1.get_extended_symbol() != initial_pool2.get_extended_symbol(),
-          "extended symbols must be different");
+        "extended symbols must be different");
     check(initial_pool1.quantity.amount > 0 && initial_pool2.quantity.amount > 0, "Both assets must be positive");
     check(initial_pool1.quantity.amount < INIT_MAX && initial_pool2.quantity.amount < INIT_MAX,
-          "Initial amounts must be less than 10^15");
+        "Initial amounts must be less than 10^15");
     check(initial_fee < MAX_FEE, "the fee is too big");
 
     const uint8_t precision = (initial_pool1.quantity.symbol.precision()
