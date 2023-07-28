@@ -170,7 +170,6 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
 
     // change pair token params
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
-
         if (in_first) {
             record.pool1.quantity += asset_in.quantity;
             record.pool2.quantity -= asset_out.quantity;
@@ -181,10 +180,9 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
 
         check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
               "Insufficient funds in the pool");
-
     });
 
-    // sub balance "in"
+    // sub balance "in + fee"
     SubExtBalance(user, asset_in + fee);
 
     // transfer balance "out"
@@ -197,17 +195,8 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
         GetRateOf(fee.quantity.amount, fee_contract_rate),
         fee.get_extended_symbol()
     };
-
-    token::transfer_action transfer_in_action(asset_in.contract, { get_self(), "active"_n });
-    transfer_in_action.send(get_self(), fee_collector, fee_collector_share.quantity, "swap fee");
-
-    // transfer "in" exchange
-    if (max_in.amount > asset_in.quantity.amount) {
-        const extended_asset exchange = { max_in.amount - asset_in.quantity.amount, asset_in.get_extended_symbol() };
-        SubExtBalance(user, exchange);
-
-        transfer_in_action.send(get_self(), user, exchange.quantity, "swap exchange");
-    }
+    token::transfer_action transfer_fee_action(asset_in.contract, { get_self(), "active"_n });
+    transfer_fee_action.send(get_self(), fee_collector, fee_collector_share.quantity, "swap fee");
 }
 
 void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset min_asset1, const asset min_asset2) {
