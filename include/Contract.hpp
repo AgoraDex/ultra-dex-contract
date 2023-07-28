@@ -19,9 +19,9 @@ public:
     void OnTokenDeposit(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
 
     // actions
-    [[eosio::action("init.token")]]
-    void InitToken(eosio::name issuer, eosio::symbol new_symbol, eosio::extended_asset initial_pool1,
-                   eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract);
+    [[eosio::action("create.pair")]]
+    void CreatePair(eosio::name issuer, eosio::symbol new_symbol, eosio::extended_asset initial_pool1,
+                    eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract);
 
     [[eosio::action("set.fee")]]
     void SetFee(eosio::symbol token, int new_fee, eosio::name fee_account);

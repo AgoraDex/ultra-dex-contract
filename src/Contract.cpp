@@ -5,8 +5,8 @@
 using namespace std;
 using namespace eosio;
 
-void Contract::InitToken(const name issuer, const symbol new_symbol, const extended_asset initial_pool1,
-                         const extended_asset initial_pool2, const int initial_fee, const name fee_contract) {
+void Contract::CreatePair(name issuer, symbol new_symbol, extended_asset initial_pool1, extended_asset initial_pool2,
+                          int initial_fee, name fee_contract) {
     require_auth(get_self());
     require_auth(issuer);
 
@@ -44,7 +44,7 @@ void Contract::InitToken(const name issuer, const symbol new_symbol, const exten
     SubExtBalance(issuer, initial_pool2);
 }
 
-void Contract::SetFee(eosio::symbol token, int new_fee, eosio::name fee_account) {
+void Contract::SetFee(symbol token, int new_fee, name fee_account) {
     check(new_fee < MAX_FEE, "the fee is too big");
 
     CurrencyStatsTable stats_table(get_self(), token.code().raw());
