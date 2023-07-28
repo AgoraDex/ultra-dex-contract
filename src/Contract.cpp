@@ -149,11 +149,12 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
         pool_out = token_it->pool1;
     }
 
-    const int64_t out = (max_in.amount * pool_out.quantity.amount) / pool_in.quantity.amount;
-    check(out >= expected_out.amount, "available is less than expected");
+    // "in" calculation
+    const int64_t in = (pool_in.quantity.amount * expected_out.amount) / pool_out.quantity.amount;
+    check(in <= max_in.amount, "available is less than expected");
 
-    const extended_asset asset_in {max_in.amount, pool_in.get_extended_symbol()};
-    const extended_asset asset_out {out, pool_out.get_extended_symbol()};
+    const extended_asset asset_in {in, pool_in.get_extended_symbol()};
+    const extended_asset asset_out {expected_out.amount, pool_out.get_extended_symbol()};
 
     // change pair token params
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
@@ -175,8 +176,8 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     const int64_t token_fee = token_it->fee;
     const name fee_collector = token_it->fee_contract;
 
-    const int64_t fee_amount = static_cast<int64_t>((static_cast<int128_t>(out) * static_cast<int128_t>(token_fee))
-            / DEFAULT_FEE_PRECISION) / 100;
+    const int64_t fee_amount = static_cast<int64_t>((static_cast<int128_t>(asset_out.quantity.amount)
+            * static_cast<int128_t>(token_fee)) / DEFAULT_FEE_PRECISION) / 100;
     const asset fee {fee_amount, asset_out.quantity.symbol};
 
     // sub balance "in"
@@ -188,6 +189,15 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
 
     // transfer fee to collector
     action.send(get_self(), fee_collector, fee, "swap fee");
+
+    // transfer "in" exchange
+    if (max_in.amount > asset_in.quantity.amount) {
+        const extended_asset exchange = {max_in.amount - asset_in.quantity.amount, asset_in.get_extended_symbol()};
+        SubExtBalance(user, exchange);
+
+        token::transfer_action exchange_action(exchange.contract, {get_self(), "active"_n});
+        exchange_action.send(get_self(), user, exchange.quantity, "swap exchange");
+    }
 }
 
 void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset min_asset1, const asset min_asset2) {
