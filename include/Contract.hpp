@@ -27,7 +27,8 @@ public:
     void SetFee(eosio::symbol token, int new_fee, eosio::name fee_account);
 
     [[eosio::action("addliquidity")]]
-    void AddLiquidity(eosio::name user, eosio::symbol token, eosio::asset max_asset1, eosio::asset max_asset2);
+    void AddLiquidity(eosio::name user, eosio::symbol token, eosio::extended_asset max_asset1,
+                      eosio::extended_asset max_asset2);
 
     [[eosio::action("remliquidity")]]
     void RemoveLiquidity(eosio::name user, eosio::asset to_sell, eosio::asset min_asset1, eosio::asset min_asset2);

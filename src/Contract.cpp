@@ -70,26 +70,26 @@ int64_t CalculateToPayAmount(const int64_t liquidity, const int64_t pool, const 
         / static_cast<uint128_t>(supply));
 }
 
-void Contract::AddLiquidity(const name user, symbol token, const asset max_asset1, const asset max_asset2) {
+void Contract::AddLiquidity(const name user, symbol token, const extended_asset max_asset1, const extended_asset max_asset2) {
     require_auth(user);
 
-    check(max_asset1.symbol != max_asset2.symbol, "assets cannot be the same");
-    check(max_asset1.amount > 0 && max_asset2.amount > 0, "assets must be positive");
+    check(max_asset1.get_extended_symbol() != max_asset2.get_extended_symbol(), "assets cannot be the same");
+    check(max_asset1.quantity.amount > 0 && max_asset2.quantity.amount > 0, "assets must be positive");
 
     CurrencyStatsTable stats_table(get_self(), token.code().raw());
     const auto token_it = stats_table.find(token.code().raw());
     check (token_it != stats_table.end(), "pair token_it does not exist");
 
-    check(max_asset1.symbol == token_it->pool1.quantity.symbol && max_asset2.symbol == token_it->pool2.quantity.symbol,
-          "invalid assets");
-
     const asset supply = token_it->supply;
     const extended_asset pool1 = token_it->pool1;
     const extended_asset pool2 = token_it->pool2;
 
+    check(max_asset1.get_extended_symbol() == pool1.get_extended_symbol()
+        && max_asset2.get_extended_symbol() == pool2.get_extended_symbol(), "invalid assets");
+
     const int64_t liquidity = min(
-            GetLiquidity(max_asset1.amount, supply.amount, pool1.quantity.amount),
-            GetLiquidity(max_asset2.amount, supply.amount, pool2.quantity.amount)
+            GetLiquidity(max_asset1.quantity.amount, supply.amount, pool1.quantity.amount),
+            GetLiquidity(max_asset2.quantity.amount, supply.amount, pool2.quantity.amount)
     );
 
     extended_asset to_pay1 = pool1;
