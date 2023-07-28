@@ -20,7 +20,7 @@ public:
 
     // actions
     [[eosio::action("create.pair")]]
-    void CreatePair(eosio::name issuer, eosio::symbol new_symbol, eosio::extended_asset initial_pool1,
+    void CreatePair(eosio::name issuer, eosio::symbol_code new_symbol_code, eosio::extended_asset initial_pool1,
                     eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract);
 
     [[eosio::action("set.fee")]]

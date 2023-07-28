@@ -5,7 +5,7 @@
 using namespace std;
 using namespace eosio;
 
-void Contract::CreatePair(name issuer, symbol new_symbol, extended_asset initial_pool1, extended_asset initial_pool2,
+void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_asset initial_pool1, extended_asset initial_pool2,
                           int initial_fee, name fee_contract) {
     require_auth(get_self());
     require_auth(issuer);
@@ -20,18 +20,17 @@ void Contract::CreatePair(name issuer, symbol new_symbol, extended_asset initial
     const uint8_t precision = (initial_pool1.quantity.symbol.precision()
             + initial_pool2.quantity.symbol.precision()) / 2;
 
-    check( new_symbol.precision() == precision, "new_symbol precision must be (precision1 + precision2) / 2" );
-
     const int128_t amount = sqrt(int128_t(initial_pool1.quantity.amount) * int128_t(initial_pool2.quantity.amount));
+    const symbol new_symbol { new_symbol_code, precision };
     const asset new_token { int64_t(amount), new_symbol };
 
-    CurrencyStatsTable stats_table {get_self(), new_symbol.code().raw()};
+    CurrencyStatsTable stats_table { get_self(), new_symbol.code().raw() };
     const auto& token_it = stats_table.find(new_symbol.code().raw());
     check (token_it == stats_table.end(), "token already exists");
 
     stats_table.emplace(get_self(), [&](CurrencyStatRecord& record) {
         record.supply = new_token;
-        record.max_supply = asset {MAX_SUPPLY, new_symbol};
+        record.max_supply = asset { MAX_SUPPLY, new_symbol };
         record.issuer = issuer;
         record.pool1 = initial_pool1;
         record.pool2 = initial_pool2;
