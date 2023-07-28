@@ -28,6 +28,10 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
     const auto& token_it = stats_table.find(new_symbol.code().raw());
     check (token_it == stats_table.end(), "token already exists");
 
+    AddBalance(issuer, new_token);
+    SubExtBalance(issuer, initial_pool1);
+    SubExtBalance(issuer, initial_pool2);
+
     stats_table.emplace(get_self(), [&](CurrencyStatRecord& record) {
         record.supply = new_token;
         record.max_supply = asset { MAX_SUPPLY, new_symbol };
@@ -37,10 +41,6 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
         record.fee = initial_fee;
         record.fee_contract = fee_contract;
     });
-
-    AddBalance(issuer, new_token);
-    SubExtBalance(issuer, initial_pool1);
-    SubExtBalance(issuer, initial_pool2);
 }
 
 void Contract::SetFee(symbol token, int new_fee, name fee_account) {
@@ -185,6 +185,9 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     const int64_t fee_amount = GetRateOf(asset_in.quantity.amount, token_fee);
     const extended_asset fee { fee_amount, asset_in.get_extended_symbol() };
 
+    // sub ext balance "in + fee"
+    SubExtBalance(user, asset_in + fee);
+
     // change pair token params
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         if (in_first) {
@@ -198,9 +201,6 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
         check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
             "Insufficient funds in the pool");
     });
-
-    // sub balance "in + fee"
-    SubExtBalance(user, asset_in + fee);
 
     // transfer balance "out"
     token::transfer_action transfer_out_action(asset_out.contract, { get_self(), "active"_n });
