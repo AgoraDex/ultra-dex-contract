@@ -5,8 +5,8 @@
 using namespace std;
 using namespace eosio;
 
-void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_asset initial_pool1, extended_asset initial_pool2,
-                          int initial_fee, name fee_contract) {
+void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_asset initial_pool1,
+                          extended_asset initial_pool2, int initial_fee, name fee_contract) {
     require_auth(get_self());
     require_auth(issuer);
 
@@ -125,6 +125,7 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     // add balance to user
     AddBalance(user, { liquidity, token });
 
+    // TODO: add dex share of fee in raw and pure pools
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         check(record.max_supply.amount - record.supply.amount >= liquidity, "supply overflow");
 
@@ -189,6 +190,7 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     SubExtBalance(user, asset_in + fee);
 
     // change pair token params
+    // TODO: add dex share of fee in raw pool
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         if (in_first) {
             record.pool1.quantity += asset_in.quantity;
