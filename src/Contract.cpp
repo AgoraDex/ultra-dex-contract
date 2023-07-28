@@ -18,7 +18,7 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
     check(initial_fee < MAX_FEE, "the fee is too big");
 
     const uint8_t precision = (initial_pool1.quantity.symbol.precision()
-            + initial_pool2.quantity.symbol.precision()) / 2;
+        + initial_pool2.quantity.symbol.precision()) / 2;
 
     const int128_t amount = sqrt(int128_t(initial_pool1.quantity.amount) * int128_t(initial_pool2.quantity.amount));
     const symbol new_symbol { new_symbol_code, precision };
@@ -88,8 +88,8 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
         && max_asset2.get_extended_symbol() == pool2.get_extended_symbol(), "invalid assets");
 
     const int64_t liquidity = min(
-            GetLiquidity(max_asset1.quantity.amount, supply.amount, pool1.quantity.amount),
-            GetLiquidity(max_asset2.quantity.amount, supply.amount, pool2.quantity.amount)
+        GetLiquidity(max_asset1.quantity.amount, supply.amount, pool1.quantity.amount),
+        GetLiquidity(max_asset2.quantity.amount, supply.amount, pool2.quantity.amount)
     );
 
     extended_asset to_pay1 = pool1;
@@ -100,7 +100,7 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
 
     // fee calculation
     const int64_t fee_amount = static_cast<int64_t>(static_cast<int128_t>(liquidity) * ADD_LIQUIDITY_FEE
-            / DEFAULT_FEE_PRECISION) / 100;
+        / DEFAULT_FEE_PRECISION) / 100;
 
     // add balance to user
     AddBalance(user, {liquidity - fee_amount, token});
@@ -139,9 +139,8 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
         in_first = true;
     } else {
         check(
-                token_it->pool1.quantity.symbol == expected_out.symbol &&
-                token_it->pool2.quantity.symbol == max_in.symbol,
-                "extended_symbol mismatch"
+            token_it->pool1.quantity.symbol == expected_out.symbol && token_it->pool2.quantity.symbol == max_in.symbol,
+            "extended_symbol mismatch"
         );
     }
 
