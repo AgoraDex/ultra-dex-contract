@@ -195,8 +195,11 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
         GetRateOf(fee.quantity.amount, fee_contract_rate),
         fee.get_extended_symbol()
     };
-    token::transfer_action transfer_fee_action(asset_in.contract, { get_self(), "active"_n });
-    transfer_fee_action.send(get_self(), fee_collector, fee_collector_share.quantity, "swap fee");
+
+    if (fee_collector_share.quantity.amount > 0) {
+        token::transfer_action transfer_fee_action(asset_in.contract, { get_self(), "active"_n });
+        transfer_fee_action.send(get_self(), fee_collector, fee_collector_share.quantity, "swap fee");
+    }
 }
 
 void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset min_asset1, const asset min_asset2) {
