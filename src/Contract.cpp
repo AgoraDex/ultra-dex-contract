@@ -60,6 +60,12 @@ void Contract::SetFee(symbol token, int new_fee, name fee_account) {
     });
 }
 
+int64_t GetRateOf(int64_t value, int64_t rate) {
+    return static_cast<int64_t>(
+        (static_cast<int128_t>(value) * static_cast<int128_t>(rate)) / DEFAULT_FEE_PRECISION
+    ) / 100;
+}
+
 int64_t GetLiquidity(const int64_t in_amount, const int64_t supply, const int64_t pool) {
     return static_cast<int64_t>((static_cast<uint128_t>(in_amount) * static_cast<uint128_t>(supply))
         / static_cast<uint128_t>(pool));
@@ -70,7 +76,8 @@ int64_t CalculateToPayAmount(const int64_t liquidity, const int64_t pool, const 
         / static_cast<uint128_t>(supply));
 }
 
-void Contract::AddLiquidity(const name user, symbol token, const extended_asset max_asset1, const extended_asset max_asset2) {
+void Contract::AddLiquidity(const name user, symbol token, const extended_asset max_asset1,
+                            const extended_asset max_asset2) {
     require_auth(user);
 
     check(max_asset1.get_extended_symbol() != max_asset2.get_extended_symbol(), "assets cannot be the same");
@@ -99,14 +106,24 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
     // fee calculation
-    const int64_t fee_amount = static_cast<int64_t>(static_cast<int128_t>(liquidity) * ADD_LIQUIDITY_FEE
-        / DEFAULT_FEE_PRECISION) / 100;
+    const name fee_collector = token_it->fee_contract;
+    const int fee_contract_rate = token_it->fee_contract_rate;
+
+    const extended_asset fee1 { GetRateOf(to_pay1.quantity.amount, ADD_LIQUIDITY_FEE), to_pay1.get_extended_symbol() };
+    const extended_asset fee_collector_share1 = {
+        GetRateOf(fee1.quantity.amount, fee_contract_rate), pool1.get_extended_symbol()
+    };
+    const extended_asset fee2 { GetRateOf(to_pay2.quantity.amount, ADD_LIQUIDITY_FEE), to_pay2.get_extended_symbol() };
+    const extended_asset fee_collector_share2 = {
+        GetRateOf(fee2.quantity.amount, fee_contract_rate), pool2.get_extended_symbol()
+    };
+
+    // sub user ext balances
+    SubExtBalance(user, to_pay1 + fee1);
+    SubExtBalance(user, to_pay2 + fee2);
 
     // add balance to user
-    AddBalance(user, { liquidity - fee_amount, token });
-
-    // add fee to fee collector
-    AddBalance(token_it->fee_contract, { fee_amount, token });
+    AddBalance(user, { liquidity, token });
 
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         check(record.max_supply.amount - record.supply.amount >= liquidity, "supply overflow");
@@ -116,14 +133,15 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
         record.pool2.quantity += to_pay2.quantity;
     });
 
-    SubExtBalance(user, to_pay1);
-    SubExtBalance(user, to_pay2);
-}
-
-int64_t GetRateOf(int64_t value, int64_t rate) {
-    return static_cast<int64_t>(
-        (static_cast<int128_t>(value) * static_cast<int128_t>(rate)) / DEFAULT_FEE_PRECISION
-    ) / 100;
+    // transfer fee to collector
+    if (fee_collector_share1.quantity.amount > 0) {
+        token::transfer_action transfer_fee_action(fee_collector_share1.contract, { get_self(), "active"_n });
+        transfer_fee_action.send(get_self(), fee_collector, fee_collector_share1.quantity, "add liquidity fee");
+    }
+    if (fee_collector_share2.quantity.amount > 0) {
+        token::transfer_action transfer_fee_action(fee_collector_share2.contract, { get_self(), "active"_n });
+        transfer_fee_action.send(get_self(), fee_collector, fee_collector_share2.quantity, "add liquidity fee");
+    }
 }
 
 void Contract::Swap(const name user, const symbol pair_token, const asset max_in, const asset expected_out) {
