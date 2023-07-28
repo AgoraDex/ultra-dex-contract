@@ -103,10 +103,10 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
         / DEFAULT_FEE_PRECISION) / 100;
 
     // add balance to user
-    AddBalance(user, {liquidity - fee_amount, token});
+    AddBalance(user, { liquidity - fee_amount, token });
 
     // add fee to fee collector
-    AddBalance(token_it->fee_contract, {fee_amount, token});
+    AddBalance(token_it->fee_contract, { fee_amount, token });
 
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         check(record.max_supply.amount - record.supply.amount >= liquidity, "supply overflow");
@@ -178,7 +178,7 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
         }
 
         check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
-              "Insufficient funds in the pool");
+            "Insufficient funds in the pool");
     });
 
     // sub balance "in + fee"
@@ -234,13 +234,13 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset
         record.pool2.quantity -= to_pay2.quantity;
 
         check(record.supply.amount > 0 && record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
-              "Insufficient funds in the pool");
+            "Insufficient funds in the pool");
     });
 
     // send funds to user
-    token::transfer_action action1(to_pay1.contract, {get_self(), "active"_n});
+    token::transfer_action action1(to_pay1.contract, { get_self(), "active"_n });
     action1.send(get_self(), user, to_pay1.quantity, "removed liquidity");
 
-    token::transfer_action action2(to_pay2.contract, {get_self(), "active"_n});
+    token::transfer_action action2(to_pay2.contract, { get_self(), "active"_n });
     action2.send(get_self(), user, to_pay2.quantity, "removed liquidity");
 }
