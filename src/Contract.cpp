@@ -216,11 +216,13 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
             record.raw_pool1_amount += raw_add;
 
             record.pool2.quantity -= asset_out.quantity;
+            record.raw_pool2_amount -= asset_out.quantity.amount;
         } else {
             record.pool2 += asset_in;
             record.raw_pool2_amount += raw_add;
 
             record.pool1 -= asset_out;
+            record.raw_pool1_amount -= asset_out.quantity.amount;
         }
 
         check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
