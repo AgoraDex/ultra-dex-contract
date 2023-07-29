@@ -1,6 +1,7 @@
 #include <Contract.hpp>
 #include <eosio.token.hpp>
 #include <cmath>
+#include <Util.hpp>
 
 using namespace std;
 using namespace eosio;
@@ -65,22 +66,6 @@ void Contract::SetFee(symbol token, int new_fee, name fee_account, int fee_contr
         record.fee_contract = fee_account;
         record.fee_contract_rate = fee_contract_rate;
     });
-}
-
-int64_t GetRateOf(int64_t value, int64_t rate) {
-    return static_cast<int64_t>(
-        (static_cast<int128_t>(value) * static_cast<int128_t>(rate)) / DEFAULT_FEE_PRECISION
-    ) / 100;
-}
-
-int64_t GetLiquidity(const int64_t in_amount, const int64_t supply, const int64_t pool) {
-    return static_cast<int64_t>((static_cast<uint128_t>(in_amount) * static_cast<uint128_t>(supply))
-        / static_cast<uint128_t>(pool));
-}
-
-int64_t CalculateToPayAmount(const int64_t liquidity, const int64_t pool, const int64_t supply) {
-    return static_cast<int64_t>((static_cast<uint128_t>(liquidity) * static_cast<uint128_t>(pool))
-        / static_cast<uint128_t>(supply));
 }
 
 void Contract::AddLiquidity(const name user, symbol token, const extended_asset max_asset1,
