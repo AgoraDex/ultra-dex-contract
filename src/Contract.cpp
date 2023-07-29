@@ -6,7 +6,7 @@ using namespace std;
 using namespace eosio;
 
 void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_asset initial_pool1,
-                          extended_asset initial_pool2, int initial_fee, name fee_contract) {
+                          extended_asset initial_pool2, int initial_fee, name fee_contract, int fee_contract_rate) {
     require_auth(get_self());
     require_auth(issuer);
 
@@ -36,14 +36,20 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
         record.supply = new_token;
         record.max_supply = asset { MAX_SUPPLY, new_symbol };
         record.issuer = issuer;
+
         record.pool1 = initial_pool1;
         record.pool2 = initial_pool2;
+
+        record.raw_pool1_amount = initial_pool1.quantity.amount;
+        record.raw_pool2_amount = initial_pool2.quantity.amount;
+
         record.fee = initial_fee;
         record.fee_contract = fee_contract;
+        record.fee_contract_rate = fee_contract_rate;
     });
 }
 
-void Contract::SetFee(symbol token, int new_fee, name fee_account) {
+void Contract::SetFee(symbol token, int new_fee, name fee_account, int fee_contract_rate) {
     check(new_fee < MAX_FEE, "the fee is too big");
 
     CurrencyStatsTable stats_table(get_self(), token.code().raw());
@@ -57,6 +63,7 @@ void Contract::SetFee(symbol token, int new_fee, name fee_account) {
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         record.fee = new_fee;
         record.fee_contract = fee_account;
+        record.fee_contract_rate = fee_contract_rate;
     });
 }
 
@@ -125,13 +132,18 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     // add balance to user
     AddBalance(user, { liquidity, token });
 
-    // TODO: add dex share of fee in raw and pure pools
+    // edit pair token params
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         check(record.max_supply.amount - record.supply.amount >= liquidity, "supply overflow");
+        const extended_asset to_add1 = to_pay1 + (fee1 - fee_collector_share1);
+        const extended_asset to_add2 = to_pay2 + (fee2 - fee_collector_share2);
 
         record.supply.amount += liquidity;
-        record.pool1.quantity += to_pay1.quantity;
-        record.pool2.quantity += to_pay2.quantity;
+        record.pool1 += to_add1;
+        record.pool2 += to_add2;
+
+        record.raw_pool1_amount += to_add1.quantity.amount;
+        record.raw_pool2_amount += to_add2.quantity.amount;
     });
 
     // transfer fee to collector
@@ -186,18 +198,29 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     const int64_t fee_amount = GetRateOf(asset_in.quantity.amount, token_fee);
     const extended_asset fee { fee_amount, asset_in.get_extended_symbol() };
 
+    const int fee_contract_rate = token_it->fee_contract_rate;
+    const extended_asset fee_collector_share {
+            GetRateOf(fee.quantity.amount, fee_contract_rate),
+            fee.get_extended_symbol()
+    };
+
     // sub ext balance "in + fee"
     SubExtBalance(user, asset_in + fee);
 
-    // change pair token params
-    // TODO: add dex share of fee in raw pool
+    // edit pair token params
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
+        const int64_t raw_add = (asset_in + (fee - fee_collector_share)).quantity.amount;
+
         if (in_first) {
-            record.pool1.quantity += asset_in.quantity;
+            record.pool1 += asset_in;
+            record.raw_pool1_amount += raw_add;
+
             record.pool2.quantity -= asset_out.quantity;
         } else {
-            record.pool2.quantity += asset_in.quantity;
-            record.pool1.quantity -= asset_out.quantity;
+            record.pool2 += asset_in;
+            record.raw_pool2_amount += raw_add;
+
+            record.pool1 -= asset_out;
         }
 
         check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
@@ -209,12 +232,6 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     transfer_out_action.send(get_self(), user, asset_out.quantity, "swap");
 
     // transfer fee to collector
-    const int fee_contract_rate = token_it->fee_contract_rate;
-    const extended_asset fee_collector_share {
-        GetRateOf(fee.quantity.amount, fee_contract_rate),
-        fee.get_extended_symbol()
-    };
-
     if (fee_collector_share.quantity.amount > 0) {
         token::transfer_action transfer_fee_action(asset_in.contract, { get_self(), "active"_n });
         transfer_fee_action.send(get_self(), fee_collector, fee_collector_share.quantity, "swap fee");
@@ -250,8 +267,11 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset
     // remove supply
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         record.supply.amount -= liquidity;
-        record.pool1.quantity -= to_pay1.quantity;
-        record.pool2.quantity -= to_pay2.quantity;
+        record.pool1 -= to_pay1;
+        record.pool2 -= to_pay2;
+
+        record.raw_pool1_amount -= to_pay1.quantity.amount;
+        record.raw_pool2_amount -= to_pay2.quantity.amount;
 
         check(record.supply.amount > 0 && record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
             "Insufficient funds in the pool");

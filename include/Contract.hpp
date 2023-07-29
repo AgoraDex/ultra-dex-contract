@@ -21,10 +21,11 @@ public:
     // actions
     [[eosio::action("create.pair")]]
     void CreatePair(eosio::name issuer, eosio::symbol_code new_symbol_code, eosio::extended_asset initial_pool1,
-                    eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract);
+                    eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract,
+                    int fee_contract_rate);
 
     [[eosio::action("set.fee")]]
-    void SetFee(eosio::symbol token, int new_fee, eosio::name fee_account);
+    void SetFee(eosio::symbol token, int new_fee, eosio::name fee_account, int fee_contract_rate);
 
     [[eosio::action("addliquidity")]]
     void AddLiquidity(eosio::name user, eosio::symbol token, eosio::extended_asset max_asset1,
