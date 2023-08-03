@@ -92,8 +92,8 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
         && max_asset2.get_extended_symbol() == pool2.get_extended_symbol(), "invalid assets");
 
     const int64_t liquidity = min(
-        GetLiquidity(max_asset1.quantity.amount, supply.amount, pool1.quantity.amount),
-        GetLiquidity(max_asset2.quantity.amount, supply.amount, pool2.quantity.amount)
+        GetLiquidity(max_asset1.quantity.amount, supply.amount, raw_pool1_amount),
+        GetLiquidity(max_asset2.quantity.amount, supply.amount, raw_pool2_amount)
     );
 
     extended_asset to_pay1 = pool1;
@@ -102,9 +102,9 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, raw_pool2_amount, supply.amount);
 
     extended_asset to_add1 = pool1;
-    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
+    to_add1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
     extended_asset to_add2 = pool2;
-    to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
+    to_add2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
     // fee calculation
     const name fee_collector = token_it->fee_contract;
