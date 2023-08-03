@@ -66,11 +66,11 @@ private:
         int fee = 0;
         eosio::name fee_contract;
 
-        int fee_contract_rate = 0;
-        int64_t raw_pool1_amount = 0;
-        int64_t raw_pool2_amount = 0;
-        int64_t initial_pool1 = 0;
-        int64_t initial_pool2 = 0;
+        int32_t$ fee_contract_rate = 0;
+        int64_t$ raw_pool1_amount = 0;
+        int64_t$ raw_pool2_amount = 0;
+        int64_t$ initial_pool1 = 0;
+        int64_t$ initial_pool2 = 0;
 
         [[nodiscard]] uint64_t primary_key() const {
             return supply.symbol.code().raw();
@@ -105,4 +105,18 @@ private:
             > DepositsTable;
 
     [[nodiscard]] static uint128_t GetIndexFromToken(eosio::extended_symbol token);
+
+    template<typename DataStream>
+    friend DataStream& operator>>(DataStream& ds, CurrencyStatRecord& v);
 };
+
+template<typename DataStream>
+DataStream& operator>>(DataStream& ds, Contract::CurrencyStatRecord& v) {
+    boost::pfr::for_each_field(v, [&](auto& field) {
+        if (ds.remaining() <= 0) {
+            return;
+        }
+        ds >> field;
+    });
+    return ds;
+}

@@ -4,6 +4,14 @@
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
 
+typedef int32_t int32_t$;
+typedef uint32_t uint32_t$;
+typedef int64_t int64_t$;
+typedef uint64_t uint64_t$;
+
+typedef eosio::asset asset$;
+typedef eosio::name name$;
+
 constexpr int128_t INT128_MAX = std::numeric_limits<__int128>::max();
 
 #include "DefinitionsRaw.hpp"
