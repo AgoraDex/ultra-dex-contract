@@ -44,6 +44,9 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
         record.raw_pool1_amount = initial_pool1.quantity.amount;
         record.raw_pool2_amount = initial_pool2.quantity.amount;
 
+        record.initial_pool1 = initial_pool1.quantity.amount;
+        record.initial_pool2 = initial_pool2.quantity.amount;
+
         record.fee = initial_fee;
         record.fee_contract = fee_contract;
         record.fee_contract_rate = fee_contract_rate;
@@ -217,7 +220,8 @@ void Contract::Swap(const name user, const symbol pair_token, const extended_ass
             record.raw_pool1_amount -= asset_out.quantity.amount;
         }
 
-        check(record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
+        check(record.pool1.quantity.amount >= record.initial_pool1
+            && record.pool2.quantity.amount >= record.initial_pool2,
             "Insufficient funds in the pool");
     });
 
@@ -268,7 +272,8 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
         record.raw_pool1_amount -= to_pay1.quantity.amount;
         record.raw_pool2_amount -= to_pay2.quantity.amount;
 
-        check(record.supply.amount > 0 && record.pool1.quantity.amount > 0 && record.pool2.quantity.amount > 0,
+        check(record.supply.amount > 0 && record.pool1.quantity.amount > record.initial_pool1
+            && record.pool2.quantity.amount > record.initial_pool2,
             "Insufficient funds in the pool");
     });
 
