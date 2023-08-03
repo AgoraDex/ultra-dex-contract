@@ -85,6 +85,8 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     const asset supply = token_it->supply;
     const extended_asset pool1 = token_it->pool1;
     const extended_asset pool2 = token_it->pool2;
+    const int64_t raw_pool1_amount = token_it->raw_pool1_amount;
+    const int64_t raw_pool2_amount = token_it->raw_pool2_amount;
 
     check(max_asset1.get_extended_symbol() == pool1.get_extended_symbol()
         && max_asset2.get_extended_symbol() == pool2.get_extended_symbol(), "invalid assets");
@@ -95,9 +97,13 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     );
 
     extended_asset to_pay1 = pool1;
-    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
-
+    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, raw_pool1_amount, supply.amount);
     extended_asset to_pay2 = pool2;
+    to_pay2.quantity.amount = CalculateToPayAmount(liquidity, raw_pool2_amount, supply.amount);
+
+    extended_asset to_add1 = pool1;
+    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
+    extended_asset to_add2 = pool2;
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
     // fee calculation
@@ -113,7 +119,7 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
         GetRateOf(fee2.quantity.amount, fee_contract_rate), pool2.get_extended_symbol()
     };
 
-    check(fee1.quantity.amount > 0 && fee2.quantity.amount > 0, "The deposit is too small");
+    check(fee1.quantity.amount > 0 && fee2.quantity.amount > 0, "The transaction amount is too small");
 
     // sub user ext balances
     SubExtBalance(user, to_pay1 + fee1);
@@ -125,15 +131,18 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     // edit pair token params
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         check(record.max_supply.amount - record.supply.amount >= liquidity, "supply overflow");
-        const extended_asset to_add1 = to_pay1 + (fee1 - fee_collector_share1);
-        const extended_asset to_add2 = to_pay2 + (fee2 - fee_collector_share2);
+        const extended_asset to_add1_raw = to_pay1 + (fee1 - fee_collector_share1);
+        const extended_asset to_add2_raw = to_pay2 + (fee2 - fee_collector_share2);
+
+        const extended_asset to_add1_pure = to_add1;
+        const extended_asset to_add2_pure = to_add2;
 
         record.supply.amount += liquidity;
-        record.pool1 += to_add1;
-        record.pool2 += to_add2;
+        record.pool1 += to_add1_pure;
+        record.pool2 += to_add2_pure;
 
-        record.raw_pool1_amount += to_add1.quantity.amount;
-        record.raw_pool2_amount += to_add2.quantity.amount;
+        record.raw_pool1_amount += to_add1_raw.quantity.amount;
+        record.raw_pool2_amount += to_add2_raw.quantity.amount;
     });
 
     // transfer fee to collector
@@ -197,7 +206,7 @@ void Contract::Swap(const name user, const symbol pair_token, const extended_ass
         fee.get_extended_symbol()
     };
 
-    check(fee.quantity.amount > 0, "The deposit is too small");
+    check(fee.quantity.amount > 0, "The transaction amount is too small");
 
     // sub ext balance "in + fee"
     SubExtBalance(user, asset_in + fee);
@@ -249,13 +258,19 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
     const asset supply = token_it->supply;
     const extended_asset pool1 = token_it->pool1;
     const extended_asset pool2 = token_it->pool2;
+    const int64_t raw_pool1_amount = token_it->raw_pool1_amount;
+    const int64_t raw_pool2_amount = token_it->raw_pool2_amount;
 
     const int64_t liquidity = to_sell.amount;
 
     extended_asset to_pay1 = pool1;
-    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
-
+    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, raw_pool1_amount, supply.amount);
     extended_asset to_pay2 = pool2;
+    to_pay2.quantity.amount = CalculateToPayAmount(liquidity, raw_pool2_amount, supply.amount);
+
+    extended_asset to_sub1 = pool1;
+    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
+    extended_asset to_sub2 = pool2;
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
     check(to_pay1 >= min_asset1 && to_pay2 >= min_asset2, "available is less than expected");
@@ -266,8 +281,8 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
     // remove supply
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         record.supply.amount -= liquidity;
-        record.pool1 -= to_pay1;
-        record.pool2 -= to_pay2;
+        record.pool1 -= to_sub1;
+        record.pool2 -= to_sub2;
 
         record.raw_pool1_amount -= to_pay1.quantity.amount;
         record.raw_pool2_amount -= to_pay2.quantity.amount;
