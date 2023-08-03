@@ -40,7 +40,7 @@ public:
               eosio::extended_asset expected_out);
 
     [[eosio::action("withdraw")]]
-    void Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extended_symbol token);
+    void Withdraw(eosio::name user, eosio::extended_symbol token);
 
     [[eosio::action("transfer")]]
     void Transfer(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
@@ -52,6 +52,7 @@ private:
 
     void AddExtBalance(eosio::name user, eosio::extended_asset value);
     void SubExtBalance(eosio::name user, eosio::extended_asset value);
+    eosio::extended_asset Exchange(eosio::name user, eosio::extended_symbol token);
 
     // token scope
     TABLE CurrencyStatRecord {

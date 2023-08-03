@@ -145,14 +145,25 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
         record.raw_pool2_amount += to_add2_raw.quantity.amount;
     });
 
+    const extended_asset exchange1 = Exchange(user, to_pay1.get_extended_symbol());
+    const extended_asset exchange2 = Exchange(user, to_pay2.get_extended_symbol());
+
+    // transfer exchange back to user
+    token::transfer_action transfer_pool1_action(to_pay1.contract, { get_self(), "active"_n });
+    token::transfer_action transfer_pool2_action(to_pay2.contract, { get_self(), "active"_n });
+    if (exchange1.quantity.amount > 0) {
+        transfer_pool1_action.send(get_self(), user, exchange1.quantity, "add liquidity exchange");
+    }
+    if (exchange2.quantity.amount > 0) {
+        transfer_pool2_action.send(get_self(), user, exchange2.quantity, "add liquidity exchange");
+    }
+
     // transfer fee to collector
     if (fee_collector_share1.quantity.amount > 0) {
-        token::transfer_action transfer_fee_action(fee_collector_share1.contract, { get_self(), "active"_n });
-        transfer_fee_action.send(get_self(), fee_collector, fee_collector_share1.quantity, "add liquidity fee");
+        transfer_pool1_action.send(get_self(), fee_collector, fee_collector_share1.quantity, "add liquidity fee");
     }
     if (fee_collector_share2.quantity.amount > 0) {
-        token::transfer_action transfer_fee_action(fee_collector_share2.contract, { get_self(), "active"_n });
-        transfer_fee_action.send(get_self(), fee_collector, fee_collector_share2.quantity, "add liquidity fee");
+        transfer_pool2_action.send(get_self(), fee_collector, fee_collector_share2.quantity, "add liquidity fee");
     }
 }
 
@@ -234,15 +245,22 @@ void Contract::Swap(const name user, const symbol pair_token, const extended_ass
             "Insufficient funds in the pool");
     });
 
-    // transfer balance "out"
-    token::transfer_action transfer_out_action(asset_out.contract, { get_self(), "active"_n });
-    transfer_out_action.send(get_self(), user, asset_out.quantity, "swap");
+    const extended_asset exchange = Exchange(user, asset_in.get_extended_symbol());
+
+    // transfer exchange back to user
+    token::transfer_action transfer_in_action(asset_in.contract, { get_self(), "active"_n });
+    if (exchange.quantity.amount > 0) {
+        transfer_in_action.send(get_self(), user, exchange.quantity, "swap exchange");
+    }
 
     // transfer fee to collector
     if (fee_collector_share.quantity.amount > 0) {
-        token::transfer_action transfer_fee_action(asset_in.contract, { get_self(), "active"_n });
-        transfer_fee_action.send(get_self(), fee_collector, fee_collector_share.quantity, "swap fee");
+        transfer_in_action.send(get_self(), fee_collector, fee_collector_share.quantity, "swap fee");
     }
+
+    // transfer balance "out"
+    token::transfer_action transfer_out_action(asset_out.contract, { get_self(), "active"_n });
+    transfer_out_action.send(get_self(), user, asset_out.quantity, "swap");
 }
 
 void Contract::RemoveLiquidity(const name user, const asset to_sell, const extended_asset min_asset1,

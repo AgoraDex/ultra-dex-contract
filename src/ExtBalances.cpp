@@ -76,21 +76,28 @@ void Contract::SubExtBalance(const name user, const extended_asset value) {
     AddExtBalance(user, -value);
 }
 
-void Contract::Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extended_symbol token) {
+void Contract::Withdraw(eosio::name user, eosio::extended_symbol token) {
     require_auth(user);
 
-    DepositsTable balances_table {get_self(), user.value };
+    const extended_asset to_transfer = Exchange(user, token);
+    check(to_transfer.quantity.amount > 0, "There is nothing to withdraw");
+
+    token::transfer_action transfer_action(to_transfer.contract, { get_self(), "active"_n });
+    transfer_action.send(get_self(), user, to_transfer.quantity, "withdraw");
+}
+
+extended_asset Contract::Exchange(const name user, const extended_symbol token) {
+    DepositsTable balances_table { get_self(), user.value };
     auto index = balances_table.get_index<"extended"_n>();
 
     const auto balance_it = index.find(GetIndexFromToken(token));
 
-    check(balance_it != index.end(), "Token not found");
+    if (balance_it == index.end()) {
+        return { 0, token };
+    }
 
-    const extended_asset to_transfer = balance_it->balance;
+    const extended_asset to_exchange = balance_it->balance;
     index.erase(balance_it);
 
-    check(to_transfer.quantity.amount > 0, "There is nothing to withdraw");
-
-    token::transfer_action transfer_action(to_transfer.contract, { get_self(), "active"_n });
-    transfer_action.send(get_self(), withdraw_to, to_transfer.quantity, "withdraw");
+    return min(to_exchange, { 0, token });
 }
