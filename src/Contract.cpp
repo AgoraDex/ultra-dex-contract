@@ -110,6 +110,8 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
         GetRateOf(fee2.quantity.amount, fee_contract_rate), pool2.get_extended_symbol()
     };
 
+    check(fee1.quantity.amount > 0 && fee2.quantity.amount > 0, "The deposit is too small");
+
     // sub user ext balances
     SubExtBalance(user, to_pay1 + fee1);
     SubExtBalance(user, to_pay2 + fee2);
@@ -142,7 +144,8 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     }
 }
 
-void Contract::Swap(const name user, const symbol pair_token, const asset max_in, const asset expected_out) {
+void Contract::Swap(const name user, const symbol pair_token, const extended_asset max_in,
+                    const extended_asset expected_out) {
     require_auth(user);
 
     CurrencyStatsTable stats_table(get_self(), pair_token.code().raw());
@@ -150,12 +153,13 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     check (token_it != stats_table.end(), "pair token does not exist");
 
     bool in_first = false;
-    if ((token_it->pool1.quantity.symbol == max_in.symbol) &&
-        (token_it->pool2.quantity.symbol == expected_out.symbol)) {
+    if ((token_it->pool1.get_extended_symbol() == max_in.get_extended_symbol()) &&
+        (token_it->pool2.get_extended_symbol() == expected_out.get_extended_symbol())) {
         in_first = true;
     } else {
         check(
-            token_it->pool1.quantity.symbol == expected_out.symbol && token_it->pool2.quantity.symbol == max_in.symbol,
+            token_it->pool1.get_extended_symbol() == expected_out.get_extended_symbol() &&
+            token_it->pool2.get_extended_symbol() == max_in.get_extended_symbol(),
             "extended_symbol mismatch"
         );
     }
@@ -170,11 +174,12 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     }
 
     // "in" calculation
-    const int64_t in = (pool_in.quantity.amount * expected_out.amount) / pool_out.quantity.amount;
-    check(in <= max_in.amount, "available is less than expected");
+    const int64_t in = CalculateInAmount(expected_out.quantity.amount, pool_in.quantity.amount,
+                                         pool_out.quantity.amount);
+    check(in <= max_in.quantity.amount, "available is less than expected");
 
     const extended_asset asset_in { in, pool_in.get_extended_symbol() };
-    const extended_asset asset_out { expected_out.amount, pool_out.get_extended_symbol() };
+    const extended_asset asset_out = expected_out;
 
     // fee calculation
     const int64_t token_fee = token_it->fee;
@@ -185,9 +190,11 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
 
     const int fee_contract_rate = token_it->fee_contract_rate;
     const extended_asset fee_collector_share {
-            GetRateOf(fee.quantity.amount, fee_contract_rate),
-            fee.get_extended_symbol()
+        GetRateOf(fee.quantity.amount, fee_contract_rate),
+        fee.get_extended_symbol()
     };
+
+    check(fee.quantity.amount > 0, "The deposit is too small");
 
     // sub ext balance "in + fee"
     SubExtBalance(user, asset_in + fee);
@@ -225,7 +232,8 @@ void Contract::Swap(const name user, const symbol pair_token, const asset max_in
     }
 }
 
-void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset min_asset1, const asset min_asset2) {
+void Contract::RemoveLiquidity(const name user, const asset to_sell, const extended_asset min_asset1,
+                               const extended_asset min_asset2) {
     require_auth(user);
 
     check(to_sell.amount > 0, "to_sell amount must be positive");
@@ -246,7 +254,7 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const asset
     extended_asset to_pay2 = pool2;
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
-    check(to_pay1.quantity >= min_asset1 && to_pay2.quantity >= min_asset2, "available is less than expected");
+    check(to_pay1 >= min_asset1 && to_pay2 >= min_asset2, "available is less than expected");
 
     // remove balance from user
     SubBalance(user, to_sell);

@@ -89,9 +89,7 @@ void Contract::Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extend
     const extended_asset to_transfer = balance_it->balance;
     index.erase(balance_it);
 
-    if (to_transfer.quantity.amount < 1) {
-        return;
-    }
+    check(to_transfer.quantity.amount > 0, "There is nothing to withdraw");
 
     token::transfer_action transfer_action(to_transfer.contract, { get_self(), "active"_n });
     transfer_action.send(get_self(), withdraw_to, to_transfer.quantity, "withdraw");

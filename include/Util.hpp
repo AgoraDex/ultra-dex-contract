@@ -18,3 +18,8 @@ int64_t CalculateToPayAmount(const int64_t liquidity, const int64_t pool, const 
     return static_cast<int64_t>((static_cast<uint128_t>(liquidity) * static_cast<uint128_t>(pool))
                                 / static_cast<uint128_t>(supply));
 }
+
+int64_t CalculateInAmount(const int64_t out_amount, const int64_t pool_in_amount, const int64_t pool_out_amount) {
+    return static_cast<int64_t>((static_cast<uint128_t>(out_amount) * static_cast<uint128_t>(pool_in_amount))
+                                / static_cast<uint128_t>(pool_out_amount));
+}

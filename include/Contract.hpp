@@ -32,10 +32,12 @@ public:
                       eosio::extended_asset max_asset2);
 
     [[eosio::action("remliquidity")]]
-    void RemoveLiquidity(eosio::name user, eosio::asset to_sell, eosio::asset min_asset1, eosio::asset min_asset2);
+    void RemoveLiquidity(eosio::name user, eosio::asset to_sell, eosio::extended_asset min_asset1,
+                         eosio::extended_asset min_asset2);
 
     [[eosio::action("swap")]]
-    void Swap(eosio::name user, eosio::symbol pair_token, eosio::asset max_in, eosio::asset expected_out);
+    void Swap(eosio::name user, eosio::symbol pair_token, eosio::extended_asset max_in,
+              eosio::extended_asset expected_out);
 
     [[eosio::action("withdraw")]]
     void Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extended_symbol token);
@@ -59,12 +61,15 @@ private:
 
         eosio::extended_asset pool1;
         eosio::extended_asset pool2;
-        int64_t raw_pool1_amount = 0;
-        int64_t raw_pool2_amount = 0;
 
         int fee = 0;
         eosio::name fee_contract;
+
         int fee_contract_rate = 0;
+        int64_t raw_pool1_amount = 0;
+        int64_t raw_pool2_amount = 0;
+        int64_t initial_pool1 = 0;
+        int64_t initial_pool2 = 0;
 
         [[nodiscard]] uint64_t primary_key() const {
             return supply.symbol.code().raw();
