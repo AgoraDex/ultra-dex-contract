@@ -37,7 +37,7 @@ void Contract::OnEosTokenDeposit(name from, name to, asset quantity, const strin
     OnTokenDeposit(from, to, quantity, memo);
 }
 
-uint128_t Contract::GetIndexFromToken(const eosio::extended_symbol token) {
+uint128_t Contract::GetIndexFromToken(const extended_symbol token) {
     return (static_cast<uint128_t>(token.get_contract().value) << 64) + token.get_symbol().raw();
 }
 
@@ -76,7 +76,7 @@ void Contract::SubExtBalance(const name user, const extended_asset value) {
     AddExtBalance(user, -value);
 }
 
-void Contract::Withdraw(eosio::name user, eosio::extended_symbol token) {
+void Contract::Withdraw(const name user, const extended_symbol token) {
     require_auth(user);
 
     const extended_asset to_transfer = Exchange(user, token);
