@@ -73,8 +73,8 @@ private:
         int32_t$ fee_contract_rate = 0;
         int64_t$ raw_pool1_amount = 0;
         int64_t$ raw_pool2_amount = 0;
-        int64_t$ fireproof_amount1 = 0;
-        int64_t$ fireproof_amount2 = 0;
+        int64_t$ min_pool1_amount = 0;
+        int64_t$ min_pool2_amount = 0;
 
         [[nodiscard]] uint64_t primary_key() const {
             return supply.symbol.code().raw();

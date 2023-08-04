@@ -44,8 +44,8 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
         record.raw_pool1_amount = initial_pool1.quantity.amount;
         record.raw_pool2_amount = initial_pool2.quantity.amount;
 
-        record.fireproof_amount1 = initial_pool1.quantity.amount;
-        record.fireproof_amount2 = initial_pool2.quantity.amount;
+        record.min_pool1_amount = initial_pool1.quantity.amount;
+        record.min_pool2_amount = initial_pool2.quantity.amount;
 
         record.fee = initial_fee;
         record.fee_contract = fee_contract;
@@ -222,8 +222,8 @@ void Contract::Swap(const name user, const symbol pair_token, const extended_ass
             record.raw_pool1_amount -= asset_out.quantity.amount;
         }
 
-        check(record.pool1.quantity.amount >= record.fireproof_amount1
-            && record.pool2.quantity.amount >= record.fireproof_amount2,
+        check(record.pool1.quantity.amount >= record.min_pool1_amount
+            && record.pool2.quantity.amount >= record.min_pool2_amount,
             "Insufficient funds in the pool");
     });
 
@@ -287,8 +287,8 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
         record.raw_pool1_amount -= to_pay1.quantity.amount;
         record.raw_pool2_amount -= to_pay2.quantity.amount;
 
-        check(record.supply.amount > 0 && record.pool1.quantity.amount >= record.fireproof_amount1
-            && record.pool2.quantity.amount >= record.fireproof_amount2,
+        check(record.supply.amount > 0 && record.pool1.quantity.amount >= record.min_pool1_amount
+            && record.pool2.quantity.amount >= record.min_pool2_amount,
             "Insufficient funds in the pool");
     });
 
@@ -311,7 +311,7 @@ void Contract::SetNewRows(const symbol token) {
         record.raw_pool1_amount = record.pool1.quantity.amount;
         record.raw_pool2_amount = record.pool2.quantity.amount;
 
-        record.fireproof_amount1 = record.pool1.quantity.amount;
-        record.fireproof_amount2 = record.pool2.quantity.amount;
+        record.min_pool1_amount = record.pool1.quantity.amount;
+        record.min_pool2_amount = record.pool2.quantity.amount;
     });
 }
