@@ -227,12 +227,12 @@ void Contract::Swap(const name user, const symbol pair_token, const extended_ass
             "Insufficient funds in the pool");
     });
 
-    const extended_asset exchange = Refund(user, asset_in.get_extended_symbol());
+    const extended_asset refund = Refund(user, asset_in.get_extended_symbol());
 
-    // transfer exchange back to user
+    // transfer refund back to user
     token::transfer_action transfer_in_action(asset_in.contract, { get_self(), "active"_n });
-    if (exchange.quantity.amount > 0) {
-        transfer_in_action.send(get_self(), user, exchange.quantity, "swap exchange");
+    if (refund.quantity.amount > 0) {
+        transfer_in_action.send(get_self(), user, refund.quantity, "refund of unused funds");
     }
 
     // transfer fee to collector
