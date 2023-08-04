@@ -9,6 +9,11 @@ void Contract::SubBalance(const name user, const asset value) {
     const auto balance_it = balances.require_find(value.symbol.code().raw(), "user balance not found");
     check(balance_it->balance.amount >= value.amount, "overdrawn balance");
 
+    if (balance_it->balance.amount == value.amount) {
+        balances.erase(balance_it);
+        return;
+    }
+
     balances.modify(balance_it, get_self(), [&](BalanceRecord& record) {
         record.balance -= value;
     });
