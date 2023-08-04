@@ -287,8 +287,8 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
         record.raw_pool1_amount -= to_pay1.quantity.amount;
         record.raw_pool2_amount -= to_pay2.quantity.amount;
 
-        check(record.supply.amount > 0 && record.pool1.quantity.amount > record.fireproof_amount1
-            && record.pool2.quantity.amount > record.fireproof_amount2,
+        check(record.supply.amount > 0 && record.pool1.quantity.amount >= record.fireproof_amount1
+            && record.pool2.quantity.amount >= record.fireproof_amount2,
             "Insufficient funds in the pool");
     });
 
