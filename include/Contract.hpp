@@ -45,6 +45,9 @@ public:
     [[eosio::action("transfer")]]
     void Transfer(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
 
+    [[eosio::action("remove.pair")]]
+    void RemovePair(eosio::symbol token);
+
     // temp actions
     [[eosio::action("set.new.rows")]]
     void SetNewRows(eosio::symbol token);
