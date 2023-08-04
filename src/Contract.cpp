@@ -250,6 +250,7 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
     require_auth(user);
 
     check(to_sell.amount > 0, "to_sell amount must be positive");
+    check(min_asset1.quantity.amount > 0 && min_asset2.quantity.amount > 0, "Min assets must positive");
 
     CurrencyStatsTable stats_table(get_self(), to_sell.symbol.code().raw());
     const auto token_it = stats_table.find(to_sell.symbol.code().raw());
