@@ -142,7 +142,9 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     const extended_asset fee1 { GetRateOf(to_pay1.quantity.amount, ADD_LIQUIDITY_FEE), to_pay1.get_extended_symbol() };
     const extended_asset fee2 { GetRateOf(to_pay2.quantity.amount, ADD_LIQUIDITY_FEE), to_pay2.get_extended_symbol() };
 
-    check(fee1.quantity.amount > 0 && fee2.quantity.amount > 0, "The transaction amount is too small");
+    check(fee1.quantity.amount > 0 && fee2.quantity.amount > 0, "The transaction amount is too small. Trying to use: " +
+        to_pay1.quantity.to_string() + " and " + to_pay2.quantity.to_string() + ". Provided: " +
+        max_asset1.quantity.to_string() + " and " + max_asset2.quantity.to_string());
 
     // sub user ext balances
     SubExtBalance(user, to_pay1 + fee1);
