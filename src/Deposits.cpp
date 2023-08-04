@@ -79,14 +79,14 @@ void Contract::SubExtBalance(const name user, const extended_asset value) {
 void Contract::Withdraw(const name user, const extended_symbol token) {
     require_auth(user);
 
-    const extended_asset to_transfer = Exchange(user, token);
+    const extended_asset to_transfer = Refund(user, token);
     check(to_transfer.quantity.amount > 0, "There is nothing to withdraw");
 
     token::transfer_action transfer_action(to_transfer.contract, { get_self(), "active"_n });
     transfer_action.send(get_self(), user, to_transfer.quantity, "withdraw");
 }
 
-extended_asset Contract::Exchange(const name user, const extended_symbol token) {
+extended_asset Contract::Refund(const name user, const extended_symbol token) {
     DepositsTable balances_table { get_self(), user.value };
     auto index = balances_table.get_index<"extended"_n>();
 

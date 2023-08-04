@@ -56,7 +56,7 @@ private:
 
     void AddExtBalance(eosio::name user, eosio::extended_asset value);
     void SubExtBalance(eosio::name user, eosio::extended_asset value);
-    eosio::extended_asset Exchange(eosio::name user, eosio::extended_symbol token);
+    eosio::extended_asset Refund(eosio::name user, eosio::extended_symbol token);
 
     // token scope
     TABLE CurrencyStatRecord {

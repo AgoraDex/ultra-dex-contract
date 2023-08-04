@@ -131,8 +131,8 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
         record.raw_pool2_amount += to_pay2.quantity.amount;
     });
 
-    const extended_asset refund1 = Exchange(user, to_pay1.get_extended_symbol());
-    const extended_asset refund2 = Exchange(user, to_pay2.get_extended_symbol());
+    const extended_asset refund1 = Refund(user, to_pay1.get_extended_symbol());
+    const extended_asset refund2 = Refund(user, to_pay2.get_extended_symbol());
 
     // transfer change back to user
     token::transfer_action transfer_pool1_action(to_pay1.contract, { get_self(), "active"_n });
@@ -227,7 +227,7 @@ void Contract::Swap(const name user, const symbol pair_token, const extended_ass
             "Insufficient funds in the pool");
     });
 
-    const extended_asset exchange = Exchange(user, asset_in.get_extended_symbol());
+    const extended_asset exchange = Refund(user, asset_in.get_extended_symbol());
 
     // transfer exchange back to user
     token::transfer_action transfer_in_action(asset_in.contract, { get_self(), "active"_n });
