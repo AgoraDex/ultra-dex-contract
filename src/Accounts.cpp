@@ -7,9 +7,9 @@ void Contract::SubBalance(const name user, const asset value) {
     BalancesTable balances { get_self(), user.value };
 
     const auto balance_it = balances.require_find(value.symbol.code().raw(), "user balance not found");
-    check(balance_it->balance.amount >= value.amount, "overdrawn balance");
+    check(balance_it->balance >= value, "overdrawn balance");
 
-    if (balance_it->balance.amount == value.amount) {
+    if (balance_it->balance == value) {
         balances.erase(balance_it);
         return;
     }
