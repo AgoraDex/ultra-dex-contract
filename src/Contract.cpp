@@ -101,23 +101,15 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     extended_asset to_pay2 = pool2;
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, raw_pool2_amount, supply.amount);
 
-    extended_asset to_add1 = pool1;
-    to_add1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
-    extended_asset to_add2 = pool2;
-    to_add2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
+    extended_asset to_raw_add1 = pool1;
+    to_raw_add1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
+    extended_asset to_raw_add2 = pool2;
+    to_raw_add2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
     // fee calculation
     const name fee_collector = token_it->fee_contract;
-    const int fee_contract_rate = token_it->fee_contract_rate;
-
     const extended_asset fee1 { GetRateOf(to_pay1.quantity.amount, ADD_LIQUIDITY_FEE), to_pay1.get_extended_symbol() };
-    const extended_asset fee_collector_share1 = {
-        GetRateOf(fee1.quantity.amount, fee_contract_rate), pool1.get_extended_symbol()
-    };
     const extended_asset fee2 { GetRateOf(to_pay2.quantity.amount, ADD_LIQUIDITY_FEE), to_pay2.get_extended_symbol() };
-    const extended_asset fee_collector_share2 = {
-        GetRateOf(fee2.quantity.amount, fee_contract_rate), pool2.get_extended_symbol()
-    };
 
     check(fee1.quantity.amount > 0 && fee2.quantity.amount > 0, "The transaction amount is too small");
 
@@ -131,40 +123,30 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     // edit pair token params
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         check(record.max_supply.amount - record.supply.amount >= liquidity, "supply overflow");
-        const extended_asset to_add1_raw = to_pay1 + (fee1 - fee_collector_share1);
-        const extended_asset to_add2_raw = to_pay2 + (fee2 - fee_collector_share2);
-
-        const extended_asset to_add1_pure = to_add1;
-        const extended_asset to_add2_pure = to_add2;
-
         record.supply.amount += liquidity;
-        record.pool1 += to_add1_pure;
-        record.pool2 += to_add2_pure;
+        record.pool1 += to_raw_add1;
+        record.pool2 += to_raw_add2;
 
-        record.raw_pool1_amount += to_add1_raw.quantity.amount;
-        record.raw_pool2_amount += to_add2_raw.quantity.amount;
+        record.raw_pool1_amount += to_pay1.quantity.amount;
+        record.raw_pool2_amount += to_pay2.quantity.amount;
     });
 
-    const extended_asset exchange1 = Exchange(user, to_pay1.get_extended_symbol());
-    const extended_asset exchange2 = Exchange(user, to_pay2.get_extended_symbol());
+    const extended_asset refund1 = Exchange(user, to_pay1.get_extended_symbol());
+    const extended_asset refund2 = Exchange(user, to_pay2.get_extended_symbol());
 
-    // transfer exchange back to user
+    // transfer change back to user
     token::transfer_action transfer_pool1_action(to_pay1.contract, { get_self(), "active"_n });
     token::transfer_action transfer_pool2_action(to_pay2.contract, { get_self(), "active"_n });
-    if (exchange1.quantity.amount > 0) {
-        transfer_pool1_action.send(get_self(), user, exchange1.quantity, "add liquidity exchange");
+    if (refund1.quantity.amount > 0) {
+        transfer_pool1_action.send(get_self(), user, refund1.quantity, "refund of unused funds");
     }
-    if (exchange2.quantity.amount > 0) {
-        transfer_pool2_action.send(get_self(), user, exchange2.quantity, "add liquidity exchange");
+    if (refund2.quantity.amount > 0) {
+        transfer_pool2_action.send(get_self(), user, refund2.quantity, "refund of unused funds");
     }
 
     // transfer fee to collector
-    if (fee_collector_share1.quantity.amount > 0) {
-        transfer_pool1_action.send(get_self(), fee_collector, fee_collector_share1.quantity, "add liquidity fee");
-    }
-    if (fee_collector_share2.quantity.amount > 0) {
-        transfer_pool2_action.send(get_self(), fee_collector, fee_collector_share2.quantity, "add liquidity fee");
-    }
+    transfer_pool1_action.send(get_self(), fee_collector, fee1.quantity, "add.liquidity fee");
+    transfer_pool2_action.send(get_self(), fee_collector, fee2.quantity, "add.liquidity fee");
 }
 
 void Contract::Swap(const name user, const symbol pair_token, const extended_asset max_in,
