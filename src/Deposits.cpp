@@ -99,5 +99,5 @@ extended_asset Contract::Refund(const name user, const extended_symbol token) {
     const extended_asset to_exchange = balance_it->balance;
     index.erase(balance_it);
 
-    return min(to_exchange, { 0, token });
+    return max(to_exchange, { 0, token });
 }
