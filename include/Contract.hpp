@@ -24,6 +24,9 @@ public:
                     eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract,
                     int fee_contract_rate);
 
+    [[eosio::action("remove.pair")]]
+    void RemovePair(eosio::symbol token);
+
     [[eosio::action("set.fee")]]
     void SetFee(eosio::symbol token, int new_fee, eosio::name fee_account, int fee_contract_rate);
 
@@ -44,13 +47,6 @@ public:
 
     [[eosio::action("transfer")]]
     void Transfer(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
-
-    [[eosio::action("remove.pair")]]
-    void RemovePair(eosio::symbol token);
-
-    // temp actions
-    [[eosio::action("set.new.rows")]]
-    void SetNewRows(eosio::symbol token);
 
 private:
 
@@ -73,11 +69,11 @@ private:
         int fee = 0;
         eosio::name fee_contract;
 
-        int32_t$ fee_contract_rate = 0;
-        int64_t$ raw_pool1_amount = 0;
-        int64_t$ raw_pool2_amount = 0;
-        int64_t$ min_pool1_amount = 0;
-        int64_t$ min_pool2_amount = 0;
+        int32$ fee_contract_rate = 0;
+        int64$ raw_pool1_amount = 0;
+        int64$ raw_pool2_amount = 0;
+        int64$ min_pool1_amount = 0;
+        int64$ min_pool2_amount = 0;
 
         [[nodiscard]] uint64_t primary_key() const {
             return supply.symbol.code().raw();

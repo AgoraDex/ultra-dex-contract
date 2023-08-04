@@ -331,19 +331,3 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
     token::transfer_action action2(to_pay2.contract, { get_self(), "active"_n });
     action2.send(get_self(), user, to_pay2.quantity, "removed liquidity");
 }
-
-void Contract::SetNewRows(const symbol token) {
-    require_auth(get_self());
-
-    CurrencyStatsTable stats_table(get_self(), token.code().raw());
-    const auto token_it = stats_table.find(token.code().raw());
-    check (token_it != stats_table.end(), "pair token_it does not exist");
-
-    stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
-        record.raw_pool1_amount = record.pool1.quantity.amount;
-        record.raw_pool2_amount = record.pool2.quantity.amount;
-
-        record.min_pool1_amount = record.pool1.quantity.amount;
-        record.min_pool2_amount = record.pool2.quantity.amount;
-    });
-}

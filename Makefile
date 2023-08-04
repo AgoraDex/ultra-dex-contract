@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
 # mainnet is https://wax.greymass.com
-endpoint ?= "https://api.testnet.ultra.eossweden.org/"
+endpoint ?= "https://ultratest-api.eoseoul.io/"
 project = dex
 account ?= agora.dex
 

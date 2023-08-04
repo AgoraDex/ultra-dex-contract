@@ -4,10 +4,10 @@
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
 
-typedef int32_t int32_t$;
-typedef uint32_t uint32_t$;
-typedef int64_t int64_t$;
-typedef uint64_t uint64_t$;
+typedef int32_t int32$;
+typedef int64_t int64$;
+typedef uint32_t uint32$;
+typedef uint64_t uint64$;
 
 typedef eosio::asset asset$;
 typedef eosio::name name$;
