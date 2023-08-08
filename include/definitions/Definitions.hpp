@@ -24,7 +24,8 @@ constexpr int128_t INT128_MAX = std::numeric_limits<__int128>::max();
 
 const int64_t MAX_SUPPLY = eosio::asset::max_amount;
 const int64_t INIT_MAX = 1000000000000000;  // 10^15
-const int DEFAULT_FEE = 10;
+
 const int128_t DEFAULT_FEE_PRECISION = 1000000; // (denominator), 10^6
 const int64_t MAX_FEE = 100 * DEFAULT_FEE_PRECISION;
+const int64_t MIN_FEE = 100;
 const int128_t ADD_LIQUIDITY_FEE = 100;

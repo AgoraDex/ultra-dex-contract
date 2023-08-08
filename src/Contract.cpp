@@ -17,6 +17,7 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
     check(initial_pool1.quantity.amount < INIT_MAX && initial_pool2.quantity.amount < INIT_MAX,
         "Initial amounts must be less than 10^15");
     check(initial_fee < MAX_FEE, "the fee is too big");
+    check(initial_fee > MIN_FEE, "the fee is too small");
 
     const uint8_t precision = (initial_pool1.quantity.symbol.precision()
         + initial_pool2.quantity.symbol.precision()) / 2;
@@ -53,21 +54,19 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
     });
 }
 
-void Contract::RemovePair(const symbol token) {
+void Contract::RemovePair(const symbol token, const name liquidity_holder) {
     require_auth(get_self());
+    require_auth(liquidity_holder);
 
     CurrencyStatsTable stats_table(get_self(), token.code().raw());
     const auto token_it = stats_table.find(token.code().raw());
     check (token_it != stats_table.end(), "pair token_it does not exist");
 
-    const name issuer = token_it->issuer;
-    require_auth(issuer);
-
     const extended_asset to_transfer1 = { token_it->raw_pool1_amount, token_it->pool1.get_extended_symbol() };
     const extended_asset to_transfer2 = { token_it->raw_pool2_amount, token_it->pool2.get_extended_symbol() };
 
     // sub all liquidity tokens
-    SubBalance(issuer, token_it->supply);
+    SubBalance(liquidity_holder, token_it->supply);
 
     // remove pair
     stats_table.erase(token_it);
@@ -77,15 +76,16 @@ void Contract::RemovePair(const symbol token) {
     token::transfer_action transfer_pool2_action(to_transfer2.contract, { get_self(), "active"_n });
 
     if (to_transfer1.quantity.amount > 0) {
-        transfer_pool1_action.send(get_self(), issuer, to_transfer1.quantity, "Removed pair token pool");
+        transfer_pool1_action.send(get_self(), liquidity_holder, to_transfer1.quantity, "Removed pair token pool");
     }
     if (to_transfer2.quantity.amount > 0) {
-        transfer_pool2_action.send(get_self(), issuer, to_transfer2.quantity, "Removed pair token pool");
+        transfer_pool2_action.send(get_self(), liquidity_holder, to_transfer2.quantity, "Removed pair token pool");
     }
 }
 
 void Contract::SetFee(symbol token, int new_fee, name fee_account, int fee_contract_rate) {
     check(new_fee < MAX_FEE, "the fee is too big");
+    check(new_fee > MIN_FEE, "the fee is too small");
 
     CurrencyStatsTable stats_table(get_self(), token.code().raw());
     const auto token_it = stats_table.find(token.code().raw());
@@ -132,10 +132,10 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     extended_asset to_pay2 = pool2;
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, raw_pool2_amount, supply.amount);
 
-    extended_asset to_raw_add1 = pool1;
-    to_raw_add1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
-    extended_asset to_raw_add2 = pool2;
-    to_raw_add2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
+    extended_asset to_add1 = pool1;
+    to_add1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
+    extended_asset to_add2 = pool2;
+    to_add2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
     // fee calculation
     const name fee_collector = token_it->fee_contract;
@@ -157,8 +157,8 @@ void Contract::AddLiquidity(const name user, symbol token, const extended_asset 
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
         check(record.max_supply.amount - record.supply.amount >= liquidity, "supply overflow");
         record.supply.amount += liquidity;
-        record.pool1 += to_raw_add1;
-        record.pool2 += to_raw_add2;
+        record.pool1 += to_add1;
+        record.pool2 += to_add2;
 
         record.raw_pool1_amount += to_pay1.quantity.amount;
         record.raw_pool2_amount += to_pay2.quantity.amount;

@@ -25,7 +25,7 @@ public:
                     int fee_contract_rate);
 
     [[eosio::action("remove.pair")]]
-    void RemovePair(eosio::symbol token);
+    void RemovePair(eosio::symbol token, eosio::name liquidity_holder);
 
     [[eosio::action("set.fee")]]
     void SetFee(eosio::symbol token, int new_fee, eosio::name fee_account, int fee_contract_rate);
