@@ -46,7 +46,6 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
         record.raw_pool2_amount = initial_pool2.quantity.amount;
 
         record.min_liquidity_amount = new_token.amount;
-        record.min_pool2_amount = initial_pool2.quantity.amount;
 
         record.fee = initial_fee;
         record.fee_contract = fee_contract;
