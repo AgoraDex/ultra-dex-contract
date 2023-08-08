@@ -45,7 +45,7 @@ void Contract::CreatePair(name issuer, symbol_code new_symbol_code, extended_ass
         record.raw_pool1_amount = initial_pool1.quantity.amount;
         record.raw_pool2_amount = initial_pool2.quantity.amount;
 
-        record.min_pool1_amount = initial_pool1.quantity.amount;
+        record.min_liquidity_amount = new_token.amount;
         record.min_pool2_amount = initial_pool2.quantity.amount;
 
         record.fee = initial_fee;
@@ -239,8 +239,13 @@ void Contract::Swap(const name user, const symbol pair_token, const extended_ass
 
     // edit pair token params
     stats_table.modify(token_it, get_self(), [&](CurrencyStatRecord& record) {
-        const int64_t raw_add = (asset_in + (fee - fee_collector_share)).quantity.amount;
+        // limits calculation
+        const int64_t min_pool1_amount = CalculateToPayAmount(
+            record.min_liquidity_amount, record.pool1.quantity.amount, record.supply.amount);
+        const int64_t min_pool2_amount = CalculateToPayAmount(
+            record.min_liquidity_amount, record.pool2.quantity.amount, record.supply.amount);
 
+        const int64_t raw_add = (asset_in + (fee - fee_collector_share)).quantity.amount;
         if (in_first) {
             record.pool1 += asset_in;
             record.raw_pool1_amount += raw_add;
@@ -255,8 +260,7 @@ void Contract::Swap(const name user, const symbol pair_token, const extended_ass
             record.raw_pool1_amount -= asset_out.quantity.amount;
         }
 
-        check(record.pool1.quantity.amount >= record.min_pool1_amount
-            && record.pool2.quantity.amount >= record.min_pool2_amount,
+        check(record.pool1.quantity.amount >= min_pool1_amount && record.pool2.quantity.amount >= min_pool2_amount,
             "Insufficient funds in the pool");
     });
 
@@ -321,8 +325,7 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
         record.raw_pool1_amount -= to_pay1.quantity.amount;
         record.raw_pool2_amount -= to_pay2.quantity.amount;
 
-        check(record.supply.amount > 0 && record.pool1.quantity.amount >= record.min_pool1_amount
-            && record.pool2.quantity.amount >= record.min_pool2_amount,
+        check(record.supply.amount >= record.min_liquidity_amount,
             "Insufficient funds in the pool");
     });
 

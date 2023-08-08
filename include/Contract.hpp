@@ -72,8 +72,7 @@ private:
         int32$ fee_contract_rate = 0;
         int64$ raw_pool1_amount = 0;
         int64$ raw_pool2_amount = 0;
-        int64$ min_pool1_amount = 0;
-        int64$ min_pool2_amount = 0;
+        int64$ min_liquidity_amount = 0;
 
         [[nodiscard]] uint64_t primary_key() const {
             return supply.symbol.code().raw();
