@@ -305,12 +305,12 @@ void Contract::RemoveLiquidity(const name user, const asset to_sell, const exten
     extended_asset to_pay2 = pool2;
     to_pay2.quantity.amount = CalculateToPayAmount(liquidity, raw_pool2_amount, supply.amount);
 
-    extended_asset to_sub1 = pool1;
-    to_pay1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
-    extended_asset to_sub2 = pool2;
-    to_pay2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
-
     check(to_pay1 >= min_asset1 && to_pay2 >= min_asset2, "available is less than expected");
+
+    extended_asset to_sub1 = pool1;
+    to_sub1.quantity.amount = CalculateToPayAmount(liquidity, pool1.quantity.amount, supply.amount);
+    extended_asset to_sub2 = pool2;
+    to_sub2.quantity.amount = CalculateToPayAmount(liquidity, pool2.quantity.amount, supply.amount);
 
     // remove balance from user
     SubBalance(user, to_sell);
