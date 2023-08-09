@@ -11,6 +11,9 @@ void Contract::OnTokenDeposit(name from, name to, asset quantity, const string& 
     if (from == get_self()) {
         return;
     }
+    if (memo == "ignore") {
+        return;
+    }
     check(quantity.amount > 0, "Token amount must be positive");
 
     const extended_asset ext_asset { quantity, get_first_receiver() };
