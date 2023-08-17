@@ -30,9 +30,10 @@ deploy:
 		cleos -u $(endpoint) set contract $(account) /$(project)/cmake-build-prod $(project).wasm $(project).abi -p $(account)@active"
 buyram:
 	$(docker) bash -c "cleos wallet unlock < /root/wallet;\
-		cleos -u $(endpoint) push action eosio buyram '["$(account)", "$(account)", "5.000 UOS"]' -p $(account)"
+		cleos -u $(endpoint) system buyram "$(account)" "$(account)" "$(amount)" -b -p $(account)@active"
 addcode:
-	$(docker) bash -c "cleos wallet unlock < /root/wallet; cleos -u $(endpoint) set account permission $(account) active --add-code $(account) owner -p $(account)@owner"
+	$(docker) bash -c "cleos wallet unlock < /root/wallet;\
+		cleos -u $(endpoint) set account permission $(account) active --add-code $(account) owner -p $(account)@owner"
 console:
 	$(docker) bash
 account:
