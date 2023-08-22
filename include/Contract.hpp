@@ -19,24 +19,31 @@ public:
     void OnTokenDeposit(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
 
     // actions
-    [[eosio::action("init.token")]]
-    void InitToken(eosio::name issuer, eosio::symbol new_symbol, eosio::extended_asset initial_pool1,
-                   eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract);
+    [[eosio::action("create.pair")]]
+    void CreatePair(eosio::name issuer, eosio::symbol_code new_symbol_code, eosio::extended_asset initial_pool1,
+                    eosio::extended_asset initial_pool2, int initial_fee, eosio::name fee_contract,
+                    int fee_contract_rate);
+
+    [[eosio::action("remove.pair")]]
+    void RemovePair(eosio::symbol token, eosio::name liquidity_holder);
 
     [[eosio::action("set.fee")]]
-    void SetFee(eosio::symbol token, int new_fee, eosio::name fee_account);
+    void SetFee(eosio::symbol token, int new_fee, eosio::name fee_account, int fee_contract_rate);
 
     [[eosio::action("addliquidity")]]
-    void AddLiquidity(eosio::name user, eosio::symbol token, eosio::asset max_asset1, eosio::asset max_asset2);
+    void AddLiquidity(eosio::name user, eosio::symbol token, eosio::extended_asset max_asset1,
+                      eosio::extended_asset max_asset2);
 
     [[eosio::action("remliquidity")]]
-    void RemoveLiquidity(eosio::name user, eosio::asset to_sell, eosio::asset min_asset1, eosio::asset min_asset2);
+    void RemoveLiquidity(eosio::name user, eosio::asset to_sell, eosio::extended_asset min_asset1,
+                         eosio::extended_asset min_asset2);
 
     [[eosio::action("swap")]]
-    void Swap(eosio::name user, eosio::symbol pair_token, eosio::asset max_in, eosio::asset expected_out);
+    void Swap(eosio::name user, eosio::symbol pair_token, eosio::extended_asset max_in,
+              eosio::extended_asset expected_out);
 
     [[eosio::action("withdraw")]]
-    void Withdraw(eosio::name user, eosio::name withdraw_to, eosio::extended_symbol token);
+    void Withdraw(eosio::name user, eosio::extended_symbol token);
 
     [[eosio::action("transfer")]]
     void Transfer(eosio::name from, eosio::name to, eosio::asset quantity, const std::string& memo);
@@ -48,16 +55,24 @@ private:
 
     void AddExtBalance(eosio::name user, eosio::extended_asset value);
     void SubExtBalance(eosio::name user, eosio::extended_asset value);
+    eosio::extended_asset Refund(eosio::name user, eosio::extended_symbol token);
 
-    // global scope
+    // token scope
     TABLE CurrencyStatRecord {
-        eosio::asset    supply;
-        eosio::asset    max_supply;
-        eosio::name     issuer;
-        eosio::extended_asset    pool1;
-        eosio::extended_asset    pool2;
+        eosio::asset supply;
+        eosio::asset max_supply;
+        eosio::name issuer;
+
+        eosio::extended_asset pool1;
+        eosio::extended_asset pool2;
+
         int fee = 0;
         eosio::name fee_contract;
+
+        int32$ fee_contract_rate = 0;
+        int64$ raw_pool1_amount = 0;
+        int64$ raw_pool2_amount = 0;
+        int64$ min_liquidity_amount = 0;
 
         [[nodiscard]] uint64_t primary_key() const {
             return supply.symbol.code().raw();
@@ -68,7 +83,7 @@ private:
     // token-pairs balances
     // user scope
     TABLE BalanceRecord {
-        eosio::asset    balance;
+        eosio::asset balance;
 
         [[nodiscard]] uint64_t primary_key() const {
             return balance.symbol.code().raw();
@@ -77,19 +92,33 @@ private:
     typedef eosio::multi_index< "accounts"_n, BalanceRecord > BalancesTable;
 
     // user scope
-    TABLE ExtendedBalanceRecord {
+    TABLE DepositRecord {
         uint64_t id = 0;
-        eosio::extended_asset   balance;
+        eosio::extended_asset balance;
 
         [[nodiscard]] uint64_t primary_key() const { return id; }
         [[nodiscard]] uint128_t secondary_key() const {
             return GetIndexFromToken(balance.get_extended_symbol());
         }
     };
-    typedef eosio::multi_index< "ext.balances"_n, ExtendedBalanceRecord,
-            eosio::indexed_by<"extended"_n, eosio::const_mem_fun<ExtendedBalanceRecord, uint128_t,
-            &ExtendedBalanceRecord::secondary_key>>
-            > ExtendedBalancesTable;
+    typedef eosio::multi_index< "deposits"_n, DepositRecord,
+            eosio::indexed_by<"extended"_n, eosio::const_mem_fun<DepositRecord, uint128_t,
+            &DepositRecord::secondary_key>>
+            > DepositsTable;
 
     [[nodiscard]] static uint128_t GetIndexFromToken(eosio::extended_symbol token);
+
+    template<typename DataStream>
+    friend DataStream& operator>>(DataStream& ds, CurrencyStatRecord& v);
 };
+
+template<typename DataStream>
+DataStream& operator>>(DataStream& ds, Contract::CurrencyStatRecord& v) {
+    boost::pfr::for_each_field(v, [&](auto& field) {
+        if (ds.remaining() <= 0) {
+            return;
+        }
+        ds >> field;
+    });
+    return ds;
+}

@@ -4,10 +4,15 @@ using namespace std;
 using namespace eosio;
 
 void Contract::SubBalance(const name user, const asset value) {
-    BalancesTable balances {get_self(), user.value};
+    BalancesTable balances { get_self(), user.value };
 
     const auto balance_it = balances.require_find(value.symbol.code().raw(), "user balance not found");
-    check(balance_it->balance.amount >= value.amount, "overdrawn balance");
+    check(balance_it->balance >= value, "overdrawn balance");
+
+    if (balance_it->balance == value) {
+        balances.erase(balance_it);
+        return;
+    }
 
     balances.modify(balance_it, get_self(), [&](BalanceRecord& record) {
         record.balance -= value;
@@ -15,7 +20,7 @@ void Contract::SubBalance(const name user, const asset value) {
 }
 
 void Contract::AddBalance(const name user, const asset value) {
-    BalancesTable balances {get_self(), user.value};
+    BalancesTable balances { get_self(), user.value };
 
     const auto balance_it = balances.find(value.symbol.code().raw());
 
