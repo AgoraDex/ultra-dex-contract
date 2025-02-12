@@ -38,3 +38,6 @@ console:
 	$(docker) bash
 account:
 	$(docker) cleos -u $(endpoint) get account $(account) -j
+removepair:
+	$(docker) cleos -u $(endpoint) push action $(dex_contract) remove.pair '["$(pair_symbol)", "$(holder_acc)"]' -p $(dex_contract) -p $(holder_acc)
+
